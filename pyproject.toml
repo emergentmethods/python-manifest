@@ -7,6 +7,7 @@ readme = "README.md"
 packages = [
     { include = "manifest" },
 ]
+license = "MIT"
 
 [tool.poetry.dependencies]
 python = "^3.10"
