@@ -128,10 +128,10 @@ bump-version:
       # Set git info
     - git config --global user.email "$GIT_EMAIL"
     - git config --global user.name "$GIT_USER"
-    - git fetch $REPO_URL $CI_COMMIT_BRANCH
-    - git reset --hard origin/$CI_COMMIT_BRANCH
-      # Explicitly checkout branch since gitlab CI detaches
     - git checkout $CI_COMMIT_BRANCH
+    - git pull $REPO_URL $CI_COMMIT_BRANCH
+    - git tag --list
+      # Explicitly checkout branch since gitlab CI detaches
   script:
     # Bump the version with prerelease tag
     - export DID_BUMP=$(semantic-release version 2>&1)
