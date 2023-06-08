@@ -1,0 +1,6 @@
+# Titles should be min 3 chars
+[title-min-length]
+min-length=3
+
+[general]
+ignore=B6

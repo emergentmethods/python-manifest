@@ -1,0 +1,64 @@
+[tool.poetry]
+name = "manifest"
+version = "0.0.0"
+description = "A modern toolkit for working with application manifests and configurations."
+authors = ["Timothy Pogue <tim@emergentmethods.ai>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pyyaml = "^6.0"
+python-rapidjson = "^1.10"
+pydantic = "^1.10.8"
+python-dotenv = "^1.0.0"
+fsspec = "^2023.5.0"
+toml = "^0.10.2"
+
+[tool.poetry.group.dev.dependencies]
+mypy = "^1.2.0"
+types-pyyaml = "^6.0.12.9"
+flake8 = "^6.0.0"
+pytest = "^7.3.1"
+pytest-asyncio = "^0.21.0"
+mkdocs = "^1.4.3"
+mkdocs-material = "^9.1.15"
+mkdocstrings = {version = "^0.22.0", extras = ["python"]}
+coverage = "^7.2.7"
+python-semantic-release = "^7.34.3"
+types-toml = "^0.10.8.6"
+pre-commit = "^3.3.2"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
+
+[tool.mypy]
+plugins = "pydantic.mypy"
+ignore_missing_imports = "True"
+
+[tool.pytest.ini_options]
+addopts = "-s -p no:warnings"
+testpaths = [
+    "tests",
+]
+asyncio_mode = "auto"
+log_cli = "True"
+log_auto_indent = "False"
+
+[tool.coverage.run]
+source = ["manifest"]
+
+[tool.coverage.report]
+ignore_errors = "true"
+
+[tool.coverage.xml]
+output = "coverage.xml"
+
+[tool.semantic_release]
+version_toml = "pyproject.toml:tool.poetry.version"
+commit_author = "Timothy Pogue <tim@emergentmethods.ai>"
+commit_subject = "chore(release): Release {version}"
+commit_message = ""
+upload_to_repository = false
+upload_to_pypi = false
+tag_format = "{version}"
