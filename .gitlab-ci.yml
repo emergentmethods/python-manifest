@@ -168,9 +168,10 @@ get-release-info:
   <<: *only_tag
   stage: release
   script:
-    # Create release.env file with changelog
-    - echo "CHANGELOG=$(semantic-release changelog)" >> release.env
+    # Create release.env
     - echo "VERSION=$(poetry version --short)" >> release.env
+    # Ensure the file is formatted correctly
+    - cat release.env
   artifacts:
     reports:
       dotenv: release.env

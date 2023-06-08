@@ -13,7 +13,7 @@ Manifest also depends on several Python libraries such as `pyyaml`, `python-rapi
 To get started with Manifest, you need to install it first. You can install the Manifest library using pip:
 
 ```bash
-pip install manifest
+pip install python-manifest
 ```
 
 Now you are ready to start using Manifest! For a guide on how to use Manifest, head over to the [Basic Usage](basic_usage.md) page. For a deep dive into more specific topics, check out the rest of our [Advanced Usage](advanced_usage/index.md) guide.
