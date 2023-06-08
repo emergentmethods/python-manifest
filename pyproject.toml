@@ -1,9 +1,12 @@
 [tool.poetry]
-name = "manifest"
+name = "python-manifest"
 version = "0.1.0"
 description = "A modern toolkit for working with application manifests and configurations."
 authors = ["Timothy Pogue <tim@emergentmethods.ai>"]
 readme = "README.md"
+packages = [
+    { include = "manifest" },
+]
 
 [tool.poetry.dependencies]
 python = "^3.10"
