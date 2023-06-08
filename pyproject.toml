@@ -8,6 +8,8 @@ packages = [
     { include = "manifest" },
 ]
 license = "MIT"
+repository = "https://github.com/emergentmethods/python-manifest"
+
 
 [tool.poetry.dependencies]
 python = "^3.10"
