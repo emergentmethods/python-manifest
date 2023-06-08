@@ -128,9 +128,10 @@ bump-version:
       # Set git info
     - git config --global user.email "$GIT_EMAIL"
     - git config --global user.name "$GIT_USER"
+      # NOTE: Must be set to CLONE strategy in gitlab CI otherwise there will be
+      # excess commits and tags from a dirty cache
     - git checkout $CI_COMMIT_BRANCH
     - git pull $REPO_URL $CI_COMMIT_BRANCH
-    - git tag --list
       # Explicitly checkout branch since gitlab CI detaches
   script:
     # Bump the version with prerelease tag
