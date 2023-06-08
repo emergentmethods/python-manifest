@@ -2,5 +2,8 @@
 [title-min-length]
 min-length=3
 
+[title-max-length]
+line-length=120
+
 [general]
-ignore=B6
+ignore=B6, title-trailing-punctuation
