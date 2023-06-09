@@ -9,9 +9,9 @@ repos:
     rev: "v1.3.0"
     hooks:
       - id: mypy
+        args: ["--ignore-missing-imports"]
+        additional_dependencies: [pydantic==1.10.9, types-toml, types-PyYAML]
         exclude: ^(tests|docs)/
-        additional_dependencies:
-          - pydantic==1.10.9
 
   - repo: https://github.com/jorisroovers/gitlint
     rev: "v0.19.1"
