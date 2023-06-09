@@ -26,7 +26,7 @@ workflow:
 # Default cache values
 default:
   cache: &global_cache
-    key: $CI_COMMIT_REF_SLUG
+    key: 'main'
     paths:
       - .cache/pypoetry
       - .cache/pip
@@ -199,8 +199,9 @@ publish-wheel:
   stage: release
   script: |
       # Publish the built wheel to the registry
-      poetry config repositories.gitlab "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
       poetry config pypi-token.pypi "$PYPI_TOKEN"
+      poetry publish
+
+      poetry config repositories.gitlab "${CI_API_V4_URL}/projects/${CI_PROJECT_ID}/packages/pypi"
       poetry config http-basic.gitlab gitlab-ci-token "$CI_JOB_TOKEN"
       poetry publish --repository gitlab
-      poetry publish --repository pypi
