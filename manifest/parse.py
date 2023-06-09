@@ -133,6 +133,8 @@ async def dump_to_file(
     :return: The number of bytes written to the file.
     :rtype: int
     """
+    assert isinstance(data, dict), "`data` must be a dictionary"
+
     # Get the serializer for the file type
     serializer = get_serializer_from_type(
         _type=determine_file_type(
@@ -192,16 +194,13 @@ async def load_from_file(
     # Deserialize the file contents
     data: dict = serializer.loads(raw_data)
 
-    # Make sure the deserialized contents are a dictionary
-    assert isinstance(data, dict), f"Deserialized contents must be a dictionary, not {type(data)}"
+    # Handle empty files
+    if not data:
+        data = {}
 
     # Post-process the file contents
     for post_hook in post_process_hooks:
         data = await execute_hook(post_hook, data)
-
-    # Handle empty files
-    if not data:
-        data = {}
 
     return data
 

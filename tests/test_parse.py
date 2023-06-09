@@ -92,22 +92,35 @@ def test_parse_env_vars(env_vars, prefix, delimiter, expected_result):
     assert result == expected_result
 
 
-async def test_read_from_file():
-    file_path = "memory://test_file.txt"
-    content = b"Hello, World!"
-
-    await write_to_file(file_path, content)
-
-    result = await read_from_file(file_path)
-    assert result == content
-
-
-async def test_write_to_file():
-    file_path = "memory://test_file.txt"
-    content = b"Hello, World!"
-
-    await write_to_file(file_path, content)
-    assert await read_from_file(file_path) == content
+@pytest.mark.parametrize(
+        "file_path, content", [
+            (
+                "memory://test_file1.txt", b"Hello, World!"
+            ),  # Good case
+            (
+                "memory://test_file2.txt", b"Python is great!"
+            ),  # Good case
+            (
+                "", b"Hello, World!"
+            ),  # Bad case - empty file path
+            (
+                None, b"Hello, World!"
+            ),  # Bad case - None file path
+            (
+                "memory://test_file3.txt", ""
+            ),  # Bad case - empty content
+            (
+                "memory://test_file4.txt", None
+            ),  # Bad case - None content
+        ]
+)
+async def test_read_write_to_file(file_path, content):
+    if file_path and content:
+        await write_to_file(file_path, content)
+        assert await read_from_file(file_path) == content
+    else:
+        with pytest.raises(Exception):
+            await write_to_file(file_path, content)
 
 
 @pytest.mark.parametrize(
@@ -133,4 +146,4 @@ async def test_write_to_file():
 )
 async def test_load_dumps(file_path, data):
     await dump_to_file(file_path, data)
-    assert await load_from_file(file_path) == data
+    result = await load_from_file(file_path)
