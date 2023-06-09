@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "python-manifest"
-version = "1.0.0"
+version = "1.0.1"
 description = "A modern toolkit for working with application manifests and configurations."
 authors = ["Timothy Pogue <tim@emergentmethods.ai>"]
 readme = "README.md"
