@@ -6,11 +6,10 @@ repos:
         exclude: ^(client|user_data|flowdapt/migrate)/
 
   - repo: https://github.com/pre-commit/mirrors-mypy
-    rev: "v1.0.1"
+    rev: "v1.3.0"
     hooks:
       - id: mypy
         exclude: ^(tests|docs)/
-        args: [--ignore-missing-imports]
 
   - repo: https://github.com/jorisroovers/gitlint
     rev: "v0.19.1"
