@@ -18,9 +18,9 @@ workflow:
       # Prevent merge request pipelines
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
       when: never
-      # We run CI on our own servers from the master repo
-    - if: $CI_SERVER_HOST == "gitlab.com"
-      when: never
+    #   # We run CI on our own servers from the master repo
+    # - if: $CI_SERVER_HOST == "gitlab.com"
+    #   when: never
     - when: always
 
 
@@ -71,6 +71,8 @@ default:
 # Anchor for docker jobs
 .docker-job:
   image: docker:latest
+  tags:
+    - gitlab-org-docker
   services:
     - docker:dind
   # Deactivate cache for docker jobs
@@ -85,6 +87,8 @@ variables:
 
 # Setup job to install dependencies
 build-env:
+  tags:
+    - gitlab-org
   stage: .pre
   script:
     - python -m venv .venv/
@@ -111,6 +115,8 @@ build-env:
 unit-tests:
   <<: *use_cached_venv
   <<: *no_tag
+  tags:
+    - gitlab-org-docker
   stage: test
   script:
     - make test
@@ -128,6 +134,8 @@ unit-tests:
 lint:
   <<: *use_cached_venv
   <<: *no_tag
+  tags:
+    - gitlab-org
   stage: lint
   script:
     - make lint
@@ -136,6 +144,8 @@ lint:
 bump-version:
   <<: *use_cached_venv
   <<: *only_protected
+  tags:
+    - gitlab-org
   stage: bump
   before_script:
       # Install semantic-release, not sure why it's not in the venv already
@@ -165,6 +175,8 @@ bump-version:
 get-version:
   <<: *use_cached_venv
   <<: *only_tag
+  tags:
+    - gitlab-org
   stage: version
   script:
     # Create release.env
@@ -179,6 +191,8 @@ get-version:
 build-docs:
   <<: *use_cached_venv
   <<: *only_tag
+  tags:
+    - gitlab-org
   stage: build
   script:
     - make docs
@@ -205,6 +219,8 @@ build-docs-docker:
 build-wheel:
   <<: *use_cached_venv
   <<: *only_tag
+  tags:
+    - gitlab-org
   stage: build
   script:
     # Build the wheel
@@ -218,6 +234,8 @@ build-wheel:
 make-release:
   <<: *use_cached_venv
   <<: *only_tag
+  tags:
+    - gitlab-org
   stage: release
   needs:
     - job: get-version
@@ -234,6 +252,8 @@ make-release:
 publish-wheel:
   <<: *use_cached_venv
   <<: *only_tag
+  tags:
+    - gitlab-org
   stage: release
   script: |
       # Publish the built wheel to the registry
