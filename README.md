@@ -1,8 +1,8 @@
 # python-manifest
 
-![Gitlab code coverage (self-managed, specific job)](https://img.shields.io/gitlab/pipeline-coverage/wizrds/manifest?branch=main&gitlab_url=https%3A%2F%2Fgit.freqai.cloud&job_name=unit-tests&style=flat-square)
-![GitLab Release (self-managed)](https://img.shields.io/gitlab/v/release/wizrds/manifest?gitlab_url=https%3A%2F%2Fgit.freqai.cloud&include_prereleases&style=flat-square)
-![GitLab (self-managed)](https://img.shields.io/gitlab/license/wizrds/manifest?gitlab_url=https%3A%2F%2Fgit.freqai.cloud&style=flat-square)
+![Gitlab code coverage (specific job)](https://img.shields.io/gitlab/pipeline-coverage/emergentmethods/python-manifest?branch=main&job_name=unit-tests&style=flat-square)
+![GitLab Release (latest by SemVer)](https://img.shields.io/gitlab/v/release/emergentmethods/python-manifest?style=flat-square)
+![GitLab](https://img.shields.io/gitlab/license/emergentmethods/python-manifest?style=flat-square)
 ![PyPI - Python Version](https://img.shields.io/pypi/pyversions/python-manifest?style=flat-square)
 
 Manifest is a flexible and dynamic Python library designed for managing application manifests including configurations in Python projects. By using the `pydantic` library for data validation, it allows you to define your own models, support dynamic configurations via expressions, and even instantiate Python objects directly from the configuration.
