@@ -2,9 +2,9 @@ site_name: Manifest
 site_description: Modern asynchronous application manifest management toolkit.
 site_author: Timothy pogue
 copyright: Emergent Methods, LLC
-site_url: https://git.freqai.cloud/wizrds/manifest
-repo_url: https://git.freqai.cloud/wizrds/manifest
-repo_name: manifest
+site_url: http://docs.emergentmethods.ai/manifest/
+repo_url: https://github.com/emergentmethods/python-manifest
+repo_name: python-manifest
 
 nav:
   - Overview: index.md
@@ -40,7 +40,7 @@ theme:
     - navigation.path
     - toc.integrate
   icon:
-    repo: fontawesome/brands/gitlab
+    repo: fontawesome/brands/github
   highlightjs: true
   hljs_languages:
     - yaml

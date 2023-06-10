@@ -7,6 +7,12 @@
 
 Manifest is a flexible and dynamic Python library designed for managing application manifests including configurations in Python projects. By using the `pydantic` library for data validation, it allows you to define your own models, support dynamic configurations via expressions, and even instantiate Python objects directly from the configuration.
 
+---
+
+For more information, check out the [Documentation](https://docs.emergentmethods.ai/manifest/).
+
+---
+
 ## Features
 
 - Load manifests and configurations from various sources including files and environment variables.

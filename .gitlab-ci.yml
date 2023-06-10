@@ -5,9 +5,10 @@ stages:
   - test
   - lint
   - bump
+  - version
   - build
   - release
-
+  - deploy
 
 workflow:
   rules:
@@ -66,6 +67,14 @@ default:
       when: on_success
     - when: never
 
+
+# Anchor for docker jobs
+.docker-job:
+  image: docker:latest
+  services:
+    - docker:dind
+  # Deactivate cache for docker jobs
+  cache: []
 
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
@@ -153,6 +162,46 @@ bump-version:
       fi
 
 
+get-version:
+  <<: *use_cached_venv
+  <<: *only_tag
+  stage: version
+  script:
+    # Create release.env
+    - echo "VERSION=$(poetry version --short)" >> release.env
+    # Ensure the file is formatted correctly
+    - cat release.env
+  artifacts:
+    reports:
+      dotenv: release.env
+
+
+build-docs:
+  <<: *use_cached_venv
+  <<: *only_tag
+  stage: build
+  script:
+    - make docs
+  artifacts:
+    paths:
+      - site/
+    expire_in: 1 week
+
+
+build-docs-docker:
+  <<: *only_tag
+  extends: .docker-job
+  stage: build
+  needs:
+    - job: get-version
+      artifacts: true
+    - job: build-docs
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker build --pull -t "$CI_REGISTRY_IMAGE:docs-latest" -t "$CI_REGISTRY_IMAGE:docs-$VERSION" -f docker/docs.Dockerfile .
+    - docker push "$CI_REGISTRY_IMAGE" --all-tags
+
+
 build-wheel:
   <<: *use_cached_venv
   <<: *only_tag
@@ -166,26 +215,12 @@ build-wheel:
       - dist/
 
 
-get-release-info:
-  <<: *use_cached_venv
-  <<: *only_tag
-  stage: release
-  script:
-    # Create release.env
-    - echo "VERSION=$(poetry version --short)" >> release.env
-    # Ensure the file is formatted correctly
-    - cat release.env
-  artifacts:
-    reports:
-      dotenv: release.env
-
-
 make-release:
   <<: *use_cached_venv
   <<: *only_tag
   stage: release
   needs:
-    - job: get-release-info
+    - job: get-version
       artifacts: true
   image: registry.gitlab.com/gitlab-org/release-cli:latest
   script:
@@ -204,3 +239,22 @@ publish-wheel:
       # Publish the built wheel to the registry
       poetry config pypi-token.pypi $PYPI_TOKEN
       poetry publish
+
+
+deploy-docs:
+  <<: *only_tag
+  extends: .docker-job
+  stage: deploy
+  needs:
+    - job: get-version
+      artifacts: true
+    - job: build-docs-docker
+  script:
+    - docker login -u "$CI_DEPLOY_USER" -p "$CI_DEPLOY_TOKEN" $CI_REGISTRY
+    - docker stack deploy -c $DOCS_STACK --prune --with-registry-auth $STACK_NAME
+  environment:
+    name: documentation
+    url: https://docs.emergentmethods.ai/$CI_PROJECT_NAME/
+  variables:
+    DEPLOY_HOST: docs.emergentmethods.ai
+    STACK_NAME: $CI_PROJECT_NAME-docs

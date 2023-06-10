@@ -30,8 +30,10 @@ Here is an example of a custom post-process hook:
 
 ```python
 
-def replace_one_with_two(contents: str):
-    return contents.replace("one", "two")
+def replace_one_with_two(contents: bytes):
+    string_contents = str(contents, "utf-8")
+    string_contents.replace("one", "two")
+    return bytes(string_contents, "utf-8")
 
 config = await MyConfiguration.from_files(
     files=["path/to/config.yaml"],
@@ -40,6 +42,6 @@ config = await MyConfiguration.from_files(
 )
 ```
 
-In this example, the `replace_one_with_two` function will be called after the file has been read but before it is parsed by the Serializer. The function takes the file contents as a string and returns the modified string, which is then passed to the Serializer for parsing. If it were a post-process hook, it would be called after the Serializer has parsed the file, and the parameter type would be a dictionary instead of string.
+In this example, the `replace_one_with_two` function will be called after the file has been read but before it is parsed by the Serializer. The function takes the file contents as bytes and returns the modified bytes, which is then passed to the Serializer for parsing. If it were a post-process hook, it would be called after the Serializer has parsed the file, and the parameter type would be a dictionary instead of bytes.
 
 Hooks provide a powerful and flexible way to control how your configuration data is processed in Manifest, enabling you to customize your configuration processing to suit your specific needs.
