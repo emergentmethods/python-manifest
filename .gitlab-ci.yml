@@ -250,7 +250,7 @@ deploy-docs:
       artifacts: true
     - job: build-docs-docker
   script:
-    - docker login -u "$CI_DEPLOY_USER" -p "$CI_DEPLOY_PASSWORD" $CI_REGISTRY
+    - docker login -u "$CI_DEPLOY_USER" -p "$CI_DEPLOY_TOKEN" $CI_REGISTRY
     - docker stack deploy -c $DOCS_STACK --prune --with-registry-auth $STACK_NAME
   environment:
     name: documentation
