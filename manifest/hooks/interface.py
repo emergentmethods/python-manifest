@@ -14,6 +14,8 @@ def get_hooks(hook_type: str, operation: str) -> list[Callable]:
     """
     Get the pre hooks.
 
+    The available hook_types are `pre` and `post`. The available operations are `load` and `dump`.
+
     :return: The pre hooks.
     :rtype: list[Callable]
     """
@@ -23,6 +25,8 @@ def get_hooks(hook_type: str, operation: str) -> list[Callable]:
 def register_hook(hook: Callable, hook_type: str, operation: str) -> None:
     """
     Register a hook to be executed on the data.
+
+    The available hook_types are `pre` and `post`. The available operations are `load` and `dump`.
 
     :param hook: The hook to be registered.
     :type hook: Callable
