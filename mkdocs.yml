@@ -3,7 +3,7 @@ site_description: Modern asynchronous application manifest management toolkit.
 site_author: Timothy pogue
 copyright: Emergent Methods, LLC
 site_url: http://docs.emergentmethods.ai/manifest/
-repo_url: https://github.com/emergentmethods/python-manifest
+repo_url: https://gitlab.com/emergentmethods/python-manifest
 repo_name: python-manifest
 
 nav:
@@ -40,7 +40,7 @@ theme:
     - navigation.path
     - toc.integrate
   icon:
-    repo: fontawesome/brands/github
+    repo: fontawesome/brands/gitlab
   highlightjs: true
   hljs_languages:
     - yaml

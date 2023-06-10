@@ -175,7 +175,7 @@ bump-version:
 
 get-version:
   <<: *use_cached_venv
-  # <<: *only_tag
+  <<: *only_tag
   tags:
     - gitlab-org-docker
   stage: version
@@ -191,7 +191,7 @@ get-version:
 
 build-docs:
   <<: *use_cached_venv
-  # <<: *only_tag
+  <<: *only_tag
   tags:
     - gitlab-org-docker
   stage: build
@@ -204,7 +204,7 @@ build-docs:
 
 
 build-docs-docker:
-  # <<: *only_tag
+  <<: *only_tag
   extends: .docker-job
   stage: build
   needs:
@@ -263,7 +263,7 @@ publish-wheel:
 
 
 deploy-docs:
-  # <<: *only_tag
+  <<: *only_tag
   extends: .docker-job
   stage: deploy
   tags:
