@@ -6,6 +6,7 @@ stages:
   - lint
   - deploy
   - bump
+  - version
   - build
   - release
 
@@ -133,26 +134,6 @@ lint:
     - make lint
 
 
-deploy-docs:
-  extends: .docker-job
-  stage: deploy
-  # rules:
-  #   - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
-  # needs:
-  #   - job: build-docs-docker
-  script:
-    - cat $DOCS_STACK
-    # - docker login -u "$CI_DEPLOY_USER" -p "$CI_DEPLOY_PASSWORD" $CI_REGISTRY
-    # - docker stack deploy -c docs/stack.yml --prune --with-registry-auth $STACK_NAME
-  environment:
-    name: documentation
-    url: https://docs.emergentmethods.ai/manifest/
-  variables:
-    DEPLOY_HOST: docs.emergentmethods.ai
-    STACK_NAME: manifest-docs
-    NODE_HOSTNAME: manager1.freqai.cloud
-
-
 bump-version:
   <<: *use_cached_venv
   <<: *only_protected
@@ -182,6 +163,47 @@ bump-version:
       fi
 
 
+get-version:
+  <<: *use_cached_venv
+  <<: *only_tag
+  stage: version
+  script:
+    # Create release.env
+    - echo "VERSION=$(poetry version --short)" >> release.env
+    # Ensure the file is formatted correctly
+    - cat release.env
+  artifacts:
+    reports:
+      dotenv: release.env
+
+
+build-docs:
+  <<: *use_cached_venv
+  # <<: *only_tag
+  stage: build
+  script:
+    - make docs
+  artifacts:
+    paths:
+      - site/
+    expire_in: 1 week
+
+
+build-docs-docker:
+  # <<: *only_tag
+  extends: .docker-job
+  stage: build
+  needs:
+    - job: get-version
+      artifacts: true
+    - job: build-docs
+  script:
+    - echo "$CI_REGISTRY_IMAGE:docs-$VERSION"
+    # - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    # - docker build --pull -t "$CI_REGISTRY_IMAGE:docs-latest" -t "$CI_REGISTRY_IMAGE:docs-$VERSION" -f docker/docs.Dockerfile .
+    # - docker push "$CI_REGISTRY_IMAGE" --all-tags
+
+
 build-wheel:
   <<: *use_cached_venv
   <<: *only_tag
@@ -193,20 +215,6 @@ build-wheel:
     name: dist
     paths:
       - dist/
-
-
-get-release-info:
-  <<: *use_cached_venv
-  <<: *only_tag
-  stage: release
-  script:
-    # Create release.env
-    - echo "VERSION=$(poetry version --short)" >> release.env
-    # Ensure the file is formatted correctly
-    - cat release.env
-  artifacts:
-    reports:
-      dotenv: release.env
 
 
 make-release:
@@ -233,3 +241,23 @@ publish-wheel:
       # Publish the built wheel to the registry
       poetry config pypi-token.pypi $PYPI_TOKEN
       poetry publish
+
+
+deploy-docs:
+  # <<: *only_tag
+  extends: .docker-job
+  stage: deploy
+  needs:
+    - job: get-version
+      artifacts: true
+    - job: build-docs-docker
+  script:
+    - cat $DOCS_STACK
+    # - docker login -u "$CI_DEPLOY_USER" -p "$CI_DEPLOY_PASSWORD" $CI_REGISTRY
+    # - docker stack deploy -c $DOCS_STACK --prune --with-registry-auth $STACK_NAME
+  environment:
+    name: documentation
+    url: https://docs.emergentmethods.ai/$CI_PROJECT_NAME/
+  variables:
+    DEPLOY_HOST: docs.emergentmethods.ai
+    STACK_NAME: $CI_PROJECT_NAME-docs
