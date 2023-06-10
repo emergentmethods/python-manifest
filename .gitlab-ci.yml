@@ -108,6 +108,41 @@ build-env:
       allow_failure: true
 
 
+lint-commit:
+  <<: *use_cached_venv
+  <<: *no_tag
+  tags:
+    - gitlab-org-docker
+  stage: lint
+  script:
+    - |
+      # Get the commit message of the last commit
+      commit_message=$(git log -1 --pretty=format:%s)
+
+      # If the commit message starts with "Merge branch", it is a merge commit, so skip the linting.
+      if [[ $commit_message == 'Merge branch'* ]]; then
+        echo "Merge commit detected, skipping lint."
+        exit 0
+      fi
+
+      pip install gitlint
+      # Ensure the commit message is valid
+      # We should always pass this as long as the pusher has the pre-commit hooks installed
+      # but just as a sanity check we'll run it here
+      git log -1 --pretty=%B | gitlint
+
+
+lint-code:
+  <<: *use_cached_venv
+  <<: *no_tag
+  tags:
+    - gitlab-org-docker
+  stage: lint
+  script:
+      # Ensure the code is formatted correctly
+    - make lint
+
+
 unit-tests:
   <<: *use_cached_venv
   <<: *no_tag
@@ -125,22 +160,6 @@ unit-tests:
       junit: report.xml
     paths:
       - coverage-report/
-
-
-lint:
-  <<: *use_cached_venv
-  <<: *no_tag
-  tags:
-    - gitlab-org-docker
-  stage: lint
-  script:
-    - pip install gitlint
-      # Ensure the commit message is valid
-      # We should always pass this as long as the pusher has the pre-commit hooks installed
-      # but just as a sanity check we'll run it here
-    - git log -1 --pretty=%B | gitlint
-      # Ensure the code is formatted correctly
-    - make lint
 
 
 bump-version:
