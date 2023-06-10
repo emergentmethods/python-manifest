@@ -1,5 +1,4 @@
 import pytest
-import fsspec
 
 from manifest.parse import (
     get_serializer_from_type,
@@ -147,3 +146,41 @@ async def test_read_write_to_file(file_path, content):
 async def test_load_dumps(file_path, data):
     await dump_to_file(file_path, data)
     result = await load_from_file(file_path)
+
+
+@pytest.mark.parametrize(
+    "file_path, data",
+    [
+        (
+            "memory://test_file.json",
+            {"name": "John Doe", "age": 30},
+        ),
+    ]
+)
+async def test_load_dumps_hooks(file_path, data):
+    def pre_hook(data: dict) -> dict:
+        data["age"] = 40
+        return data
+
+    def post_hook(data: bytes) -> bytes:
+        return str(data, "utf-8").replace("John", "Jane").encode("utf-8")
+
+    # Pre-process hook for dump accepts a dict and returns a dict
+    # Post-process hook for dump accepts bytes and returns bytes
+    await dump_to_file(
+        file=file_path,
+        data=data,
+        pre_process_hooks=[pre_hook],
+        post_process_hooks=[post_hook]
+    )
+
+    # For loading it's vice versa, pre-process hook accepts bytes and returns bytes
+    # Post-process hook accepts a dict and returns a dict
+    result = await load_from_file(
+        file=file_path,
+        pre_process_hooks=[post_hook],
+        post_process_hooks=[pre_hook]
+    )
+
+    assert result["name"] == "Jane Doe"
+    assert result["age"] == 40

@@ -1,3 +1,4 @@
+import os
 from typing import Any, Callable
 
 from manifest.utils import is_async_callable, run_in_thread
@@ -37,7 +38,7 @@ async def ref_op(args: list[str], data: dict) -> Any:
     :raises KeyError: If the referenced key is not found in the referenced file.
 
     """
-    from manifest.parse import load_from_file
+    from manifest.parse import load_from_file, current_file, parse_file_path
 
     # Split the path into file_path and key_path
     path, *_ = args
@@ -46,6 +47,21 @@ async def ref_op(args: list[str], data: dict) -> Any:
     if len(parts) == 2:
         # Both file_path and key_path are included
         file_path, key_path = parts
+        parsed_path = parse_file_path(file_path)
+
+        # If the file path is local, and it's relative
+        # join it with the parent directory of the current file
+        # so that it's relative to the current file and not the
+        # current working directory
+        if parsed_path["is_local"]:  # pragma: no cover
+            if not os.path.isabs(file_path):
+                file_path = os.path.join(
+                    os.path.dirname(
+                        current_file.get()
+                    ),
+                    file_path
+                )
+
         ref_data = await load_from_file(file_path)
     elif len(parts) == 1:
         # Only a dict path, referencing part from same data

@@ -1,5 +1,8 @@
+import os
 from typing import Any, Callable
-from fsspec import open as fsspec_open
+from contextvars import ContextVar
+from fsspec import open as fsspec_open, AbstractFileSystem
+from fsspec.core import url_to_fs
 
 from manifest.serializers import (
     Serializer,
@@ -18,6 +21,26 @@ from manifest.utils import (
 )
 
 Undefined = type("Undefined", (), {"__repr__": lambda self: "Undefined"})
+current_file: ContextVar[str] = ContextVar("current_file", default="")
+
+
+def parse_file_path(file_path: str) -> dict[str, Any]:
+    """
+    Parse a file path and return a dictionary containing the protocol, path, and whether
+    the file is local.
+
+    :param file_path: The path to the file.
+    :type file_path: str
+    :return: A dictionary containing the protocol, path, and whether the file is local.
+    """
+    fs: AbstractFileSystem
+    fs, _ = url_to_fs(file_path)
+
+    return {
+        "protocol": fs.protocol,
+        "path": fs._strip_protocol(file_path),
+        "is_local": getattr(fs, "local_file", False)
+    }
 
 
 def determine_file_type(file_ext: str) -> str:
@@ -27,7 +50,7 @@ def determine_file_type(file_ext: str) -> str:
     File types are used to determine which serializer to use when loading or dumping
     data from a file. For example, if the file extension is ".json", then the file type
     will be "JSON". If the file extension is not recognized, then the file type will be "*",
-    which by default is used to indicate that no serializer should be used.
+    which by default is used to indicate that no serializer was found.
 
     Only the following file types are supported:
         - JSON
@@ -143,16 +166,24 @@ async def dump_to_file(
         _default=default_serializer
     )
 
-    # Pre-process the data
-    for pre_hook in pre_process_hooks:
-        data = await execute_hook(pre_hook, data)
+    # Set the current file context variable to have a reference of the current file
+    # being worked on in the hooks
+    token = current_file.set(file)
 
-    # Serialize the data
-    serialized_data = serializer.dumps(data)
+    try:
+        # Pre-process the data
+        for pre_hook in pre_process_hooks:
+            data = await execute_hook(pre_hook, data)
 
-    # Post-process the data
-    for post_hook in post_process_hooks:
-        serialized_data = await execute_hook(post_hook, serialized_data)
+        # Serialize the data
+        serialized_data = serializer.dumps(data)
+
+        # Post-process the data
+        for post_hook in post_process_hooks:
+            serialized_data = await execute_hook(post_hook, serialized_data)
+    finally:
+        # Reset the current file context variable
+        current_file.reset(token)
 
     # Write the serialized data to the file
     return await write_to_file(file, serialized_data, **kwargs)
@@ -184,23 +215,39 @@ async def load_from_file(
         ),
         _default=default_serializer
     )
+
+    parsed_info = parse_file_path(file)
+
+    if parsed_info["is_local"]:
+        if not os.path.isabs(file):
+            # parse_file_path gives an expanded filepath if local, so replace it
+            # with that to ensure the referenced file path is always absolute
+            file = parsed_info["path"]
+
     # Read the file
     raw_data = await read_from_file(file, **kwargs)
+    # Set the current file context variable to have a reference of the current file
+    # being worked on in the hooks
+    token = current_file.set(file)
 
-    # Pre-process the file contents
-    for pre_hook in pre_process_hooks:
-        raw_data = await execute_hook(pre_hook, raw_data)
+    try:
+        # Pre-process the file contents
+        for pre_hook in pre_process_hooks:
+            raw_data = await execute_hook(pre_hook, raw_data)
 
-    # Deserialize the file contents
-    data: dict = serializer.loads(raw_data)
+        # Deserialize the file contents
+        data: dict = serializer.loads(raw_data)
 
-    # Handle empty files
-    if not data:
-        data = {}
+        # Handle empty files
+        if not data:
+            data = {}
 
-    # Post-process the file contents
-    for post_hook in post_process_hooks:
-        data = await execute_hook(post_hook, data)
+        # Post-process the file contents
+        for post_hook in post_process_hooks:
+            data = await execute_hook(post_hook, data)
+    finally:
+        # Reset the current file context variable
+        current_file.reset(token)
 
     return data
 
