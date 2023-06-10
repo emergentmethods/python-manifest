@@ -165,7 +165,7 @@ bump-version:
 
 get-version:
   <<: *use_cached_venv
-  <<: *only_tag
+  # <<: *only_tag
   stage: version
   script:
     # Create release.env
