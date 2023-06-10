@@ -208,13 +208,13 @@ build-docs-docker:
   extends: .docker-job
   stage: build
   needs:
-    - job: get-version
-      artifacts: true
+    # - job: get-version
+    #   artifacts: true
     - job: build-docs
   script:
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
     - docker build --pull -t "$CI_REGISTRY_IMAGE:docs-latest" -t "$CI_REGISTRY_IMAGE:docs-$VERSION" -f docker/docs.Dockerfile .
-    - docker push "$CI_REGISTRY_IMAGE" --all-tags
+    # - docker push "$CI_REGISTRY_IMAGE" --all-tags
 
 
 build-wheel:
@@ -269,12 +269,13 @@ deploy-docs:
   tags:
     - em-manager1-runner
   needs:
-    - job: get-version
-      artifacts: true
+    # - job: get-version
+    #   artifacts: true
     - job: build-docs-docker
   script:
-    - docker login -u "$CI_DEPLOY_USER" -p "$CI_DEPLOY_TOKEN" $CI_REGISTRY
-    - docker stack deploy -c $DOCS_STACK --prune --with-registry-auth $STACK_NAME
+    - cat $DOCS_STACK
+    # - docker login -u "$CI_DEPLOY_USER" -p "$CI_DEPLOY_TOKEN" $CI_REGISTRY
+    # - docker stack deploy -c $DOCS_STACK --prune --with-registry-auth $STACK_NAME
   environment:
     name: documentation
     url: https://docs.emergentmethods.ai/$CI_PROJECT_NAME/
