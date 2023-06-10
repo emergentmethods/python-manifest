@@ -81,46 +81,12 @@ async def ref_op(args: list[str], data: dict) -> Any:
     return ref_data
 
 
-def add_op(args: list[str], _) -> int:
-    """
-    Sums the values in the comma-separated string argument and returns the result.
-
-    :param args: The arguments to sum
-    :type args: list[str]
-    :returns: The sum of the values
-    :rtype: int
-    """
-    return sum(
-        [
-            int(v)
-            for v in args
-        ]
-    )
-
-
-def reverse_op(args: list[str], _) -> str:
-    """
-    Reverses a string.
-
-    :param args: The string to reverse.
-    :type args: list[str]
-    :returns: The reversed string.
-    :rtype: str
-    """
-    # Ensure each arg is a string
-    args = [str(arg) for arg in args]
-
-    # Reverse each string
-    reversed_strings = [arg[::-1] for arg in args]
-
-    # Join them
-    return "".join(reversed_strings)
-
-
 OPERATIONS: dict[str, Callable] = {
     "ref": ref_op,
-    "add": add_op,
-    "reverse": reverse_op,
+    "sum": lambda args, _: sum([float(v) for v in args]),
+    "reverse": lambda args, _: "".join([str(arg)[::-1] for arg in args]),
+    "upper": lambda args, _: args[0].upper(),
+    "lower": lambda args, _: args[0].lower(),
 }
 
 

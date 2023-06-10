@@ -21,16 +21,6 @@ def test_register_unregister_get_operation():
         get_operation("test")
 
 
-async def test_add_operation():
-    result = await execute_operation("add", ["1", "2", "3"], {})
-    assert result == 6
-
-
-async def test_reverse_operation():
-    result = await execute_operation("reverse", ["HelloWorld"], {})
-    assert result == "dlroWolleH"
-
-
 async def test_ref_operation():
     data = {"compute": {"cpus": 4}}
     file_path = "memory://test.json"
