@@ -4,6 +4,7 @@ image: python:3.10
 stages:
   - test
   - lint
+  - deploy
   - bump
   - build
   - release
@@ -67,6 +68,14 @@ default:
     - when: never
 
 
+# Anchor for docker jobs
+.docker-job:
+  image: docker:latest
+  services:
+    - docker:dind
+  # Deactivate cache for docker jobs
+  cache: []
+
 # Change pip's cache directory to be inside the project directory since we can
 # only cache local items.
 variables:
@@ -122,6 +131,26 @@ lint:
   stage: lint
   script:
     - make lint
+
+
+deploy-docs:
+  extends: .docker-job
+  stage: deploy
+  # rules:
+  #   - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+  # needs:
+  #   - job: build-docs-docker
+  script:
+    - echo $DOCS_STACK_FILE
+    # - docker login -u "$CI_DEPLOY_USER" -p "$CI_DEPLOY_PASSWORD" $CI_REGISTRY
+    # - docker stack deploy -c docs/stack.yml --prune --with-registry-auth $STACK_NAME
+  environment:
+    name: documentation
+    url: https://docs.emergentmethods.ai/manifest/
+  variables:
+    DEPLOY_HOST: docs.emergentmethods.ai
+    STACK_NAME: manifest-docs
+    NODE_HOSTNAME: manager1.freqai.cloud
 
 
 bump-version:
