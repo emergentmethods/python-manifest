@@ -16,14 +16,9 @@ Manifest provides a variety of built-in operations that can be used with express
 | `reverse` 	| Reverse a string              	| `$reverse{hello}` 	|
 | `upper`   	| Convert a string to uppercase 	| `$upper{hello}`   	|
 | `lower`   	| Convert a string to lowercase 	| `$lower{HELLO}`   	|
+| `ref`     	| Get a value from the context  	| `$ref{key}` or `$ref{path|key}`  	|
+| `sum`     	| Sum a list of numbers         	| `$sum{1,2,3}`     	|
 
-The above operations are used in expressions as follows:
-
-```yaml
-name_value: $reverse{olleH}
-upper_value: $upper{hello}
-lower_value: $lower{HELLO}
-```
 
 ## Custom Operations
 
