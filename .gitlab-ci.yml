@@ -197,10 +197,9 @@ build-docs-docker:
       artifacts: true
     - job: build-docs
   script:
-    - echo "$CI_REGISTRY_IMAGE:docs-$VERSION"
-    # - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-    # - docker build --pull -t "$CI_REGISTRY_IMAGE:docs-latest" -t "$CI_REGISTRY_IMAGE:docs-$VERSION" -f docker/docs.Dockerfile .
-    # - docker push "$CI_REGISTRY_IMAGE" --all-tags
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker build --pull -t "$CI_REGISTRY_IMAGE:docs-latest" -t "$CI_REGISTRY_IMAGE:docs-$VERSION" -f docker/docs.Dockerfile .
+    - docker push "$CI_REGISTRY_IMAGE" --all-tags
 
 
 build-wheel:
@@ -251,9 +250,8 @@ deploy-docs:
       artifacts: true
     - job: build-docs-docker
   script:
-    - cat $DOCS_STACK
-    # - docker login -u "$CI_DEPLOY_USER" -p "$CI_DEPLOY_PASSWORD" $CI_REGISTRY
-    # - docker stack deploy -c $DOCS_STACK --prune --with-registry-auth $STACK_NAME
+    - docker login -u "$CI_DEPLOY_USER" -p "$CI_DEPLOY_PASSWORD" $CI_REGISTRY
+    - docker stack deploy -c $DOCS_STACK --prune --with-registry-auth $STACK_NAME
   environment:
     name: documentation
     url: https://docs.emergentmethods.ai/$CI_PROJECT_NAME/
