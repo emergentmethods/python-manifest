@@ -39,13 +39,13 @@ This function takes two parameters:
 Here is an example of creating a custom operation:
 
 ```python
-from manifest.expressions.operations import add_operation
+from manifest.expressions.operations import register_operation
 
 def multiply(args: list[str], context: dict) -> int:
     # This function ignores the context and simply multiplies the arguments.
     return int(args[0]) * int(args[1])
 
-add_operation("multiply", multiply)
+register_operation("multiply", multiply)
 ```
 
 Now we can use our new operation in our configuration:
