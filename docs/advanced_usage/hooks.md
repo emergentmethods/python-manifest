@@ -49,6 +49,6 @@ register_hook(replace_one_with_two, hook_type="pre", operation="load")
 
 In this example, the `replace_one_with_two` function will be called after the file has been read but before it is parsed by the Serializer. The function takes the file contents as bytes and returns the modified bytes, which is then passed to the Serializer for parsing. If it were a post-process hook, it would be called after the Serializer has parsed the file, and the parameter type would be a dictionary instead of bytes.
 
-When registering hooks the available hook types are `pre` and `post`, and the available operations are `load` and `dump`.
+When registering hooks the available hook types are `pre` and `post`, and the available operations are `load` and `dump`. If you have a hook registered globally that you don't want to use anymore you can call `unregister_hook` with the same parameters. This can be done in the case of the builtin hooks as well.
 
 Hooks provide a powerful and flexible way to control how your configuration data is processed in Manifest, enabling you to customize your configuration processing to suit your specific needs.

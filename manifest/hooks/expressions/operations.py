@@ -124,7 +124,7 @@ OPERATIONS: dict[str, Callable] = {
 }
 
 
-def add_operation(operation_name: str, func: Callable[[list[str], dict], Any]) -> None:
+def register_operation(operation_name: str, func: Callable[[list[str], dict], Any]) -> None:
     """
     Register an operation with the given name.
 
