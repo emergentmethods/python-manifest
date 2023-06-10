@@ -18,9 +18,6 @@ workflow:
       # Prevent merge request pipelines
     - if: $CI_PIPELINE_SOURCE == 'merge_request_event'
       when: never
-    #   # We run CI on our own servers from the master repo
-    # - if: $CI_SERVER_HOST == "gitlab.com"
-    #   when: never
     - when: always
 
 
@@ -139,6 +136,8 @@ lint:
   script:
     - pip install gitlint
       # Ensure the commit message is valid
+      # We should always pass this as long as the pusher has the pre-commit hooks installed
+      # but just as a sanity check we'll run it here
     - git log -1 --pretty=%B | gitlint
       # Ensure the code is formatted correctly
     - make lint
