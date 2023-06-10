@@ -10,7 +10,7 @@ from manifest.serializers import (
     YAMLSerializer,
     TOMLSerializer,
 )
-from manifest.hooks import execute_hook
+from manifest.hooks import execute_hook, get_hooks
 from manifest.utils import (
     merge_dicts_flat,
     merge_dicts,
@@ -166,6 +166,9 @@ async def dump_to_file(
         _default=default_serializer
     )
 
+    pre_process_hooks = get_hooks("pre", operation="dump") + pre_process_hooks
+    post_process_hooks = get_hooks("post", operation="dump") + post_process_hooks
+
     # Set the current file context variable to have a reference of the current file
     # being worked on in the hooks
     token = current_file.set(file)
@@ -215,6 +218,9 @@ async def load_from_file(
         ),
         _default=default_serializer
     )
+
+    pre_process_hooks = get_hooks("pre", operation="load") + pre_process_hooks
+    post_process_hooks = get_hooks("post", operation="load") + post_process_hooks
 
     parsed_info = parse_file_path(file)
 
@@ -290,7 +296,7 @@ def parse_env_vars(
     """
     Parse environment variables by converting them into a list of strings in the format "key=value",
     filtering out any keys that do not start with the specified prefix, and then calling
-    `parse_dot_list()` on the resulting list.
+    `parse_key_values()` on the resulting list.
 
     :param env_vars: A dictionary containing environment variables to be parsed.
     :type env_vars: dict[str, Any]
@@ -301,14 +307,14 @@ def parse_env_vars(
     :return: The parsed environment variables as a dictionary.
     :rtype: dict[str, Any]
     """
-    return parse_dot_list(
+    return parse_key_values(
         [
             "{k}={v}".format(
                 # Remove the beginning prefix and delimiter, and convert to lowercase
                 k=key.replace(prefix + delimiter, "").lower(),
                 v=val
             ).replace(delimiter, ".")
-            # Replace any delimiters with dots to be parsed by `parse_dot_list()`
+            # Replace any delimiters with dots to be parsed by `parse_key_values()`
             for key, val in env_vars.items()
             # Only parse environment variables that start with the prefix
             if key.startswith(prefix)
@@ -316,33 +322,43 @@ def parse_env_vars(
     )
 
 
-def parse_dot_list(dot_list: list[str]) -> dict:
+def parse_key_value(key_value: str) -> dict:
     """
-    Parse a list of dot-delimited strings and return a nested dictionary.
+    Parse a key-value pair in the format "a.b.c=value" and return a dictionary.
+
+    :param key_value: A key-value pair in the format "key=value".
+    :type key_value: str
+    :return: A dictionary containing the parsed key-value pair.
+    :rtype: dict[str, Any]
+    """
+    parsed_dict = DotDict()
+    k, v = key_value.split("=")
+    parsed_dict[k] = coerce_to_basic_types(v)
+
+    return dict(parsed_dict)
+
+
+def parse_key_values(key_values: list[str]) -> dict:
+    """
+    Parse a list of dot-delimited key value strings and return a nested dictionary.
 
     This function takes a list of dot-delimited strings in the format "a.b.c=value"
     and returns a nested dictionary where each key in the dictionary represents
     a level of nesting in the original dot-delimited string.
 
-    :param dot_list: A list of dot-delimited strings.
-    :type dot_list: List[str]
+    :param key_values: A list of dot-delimited strings.
+    :type key_values: List[str]
     :returns: A nested dictionary containing the parsed key-value pairs.
     :rtype: dict
 
     :Example:
-        >>> dot_list = ["a.b.c=1", "a.b.d=2", "a.e=3"]
-        >>> parse_dot_list(dot_list)
+        >>> kvs = ["a.b.c=1", "a.b.d=2", "a.e=3"]
+        >>> parse_key_values(kvs)
         {'a': {'b': {'c': '1', 'd': '2'}, 'e': '3'}}
     """
-    result: dict = {}
-    for dot_string in dot_list:
-        # Split the string into a key and value and use a DotDict
-        # to create a nested dictionary from the key
-        k, v = dot_string.split("=")
-
-        parsed_dict = DotDict()
-        parsed_dict[k] = coerce_to_basic_types(v)
-
-        # Merge the parsed dictionary with the previous dicts
-        result = merge_dicts(result, parsed_dict)
-    return result
+    return merge_dicts(
+        *[
+            parse_key_value(key_value)
+            for key_value in key_values
+        ]
+    )

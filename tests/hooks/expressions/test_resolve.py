@@ -1,6 +1,6 @@
 import pytest
 
-from manifest.expressions.resolve import parse_expression, resolve_expression, resolve_expressions
+from manifest.hooks.expressions.resolve import parse_expression, resolve_expression, resolve_expressions
 
 
 async def test_parse_expression():

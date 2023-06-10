@@ -1,6 +1,6 @@
 import pytest
 
-from manifest.expressions.operations import execute_operation
+from manifest.hooks.expressions.operations import execute_operation
 from manifest.parse import dump_to_file
 
 

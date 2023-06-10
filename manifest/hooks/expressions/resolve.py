@@ -1,7 +1,7 @@
 import re
 from typing import Any
 
-from manifest.expressions.operations import execute_operation
+from manifest.hooks.expressions.operations import execute_operation
 
 
 def parse_expression(expression: str) -> dict | None:
