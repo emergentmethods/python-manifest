@@ -2,8 +2,8 @@
 image: python:3.10
 
 stages:
-  - test
   - lint
+  - test
   - bump
   - version
   - build
