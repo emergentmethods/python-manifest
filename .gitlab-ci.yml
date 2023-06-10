@@ -137,6 +137,10 @@ lint:
     - gitlab-org-docker
   stage: lint
   script:
+    - pip install gitlint
+      # Ensure the commit message is valid
+    - git log -1 --pretty=%B | gitlint
+      # Ensure the code is formatted correctly
     - make lint
 
 
