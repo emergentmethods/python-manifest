@@ -34,7 +34,7 @@ def register_hook(hook: Callable, hook_type: str, operation: str) -> None:
     key = (hook_type, operation)
 
     if key not in _HOOKS:
-        raise ValueError(f"Invalid hook type: {hook_type}")
+        raise ValueError(f"Invalid hook type and/or operation: {hook_type}, {operation}")
 
     _HOOKS[key].append(hook)
 
