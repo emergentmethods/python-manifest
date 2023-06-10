@@ -141,7 +141,7 @@ deploy-docs:
   # needs:
   #   - job: build-docs-docker
   script:
-    - echo $DOCS_STACK
+    - cat $DOCS_STACK
     # - docker login -u "$CI_DEPLOY_USER" -p "$CI_DEPLOY_PASSWORD" $CI_REGISTRY
     # - docker stack deploy -c docs/stack.yml --prune --with-registry-auth $STACK_NAME
   environment:
