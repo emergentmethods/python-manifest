@@ -136,6 +136,28 @@ def register_operation(operation_name: str, func: Callable[[list[str], dict], An
     OPERATIONS[operation_name] = func
 
 
+def unregister_operation(operation_name: str) -> None:
+    """
+    Unregister an operation with the given name.
+
+    :param operation_name: The name of the operation.
+    :type operation_name: str
+    """
+    del OPERATIONS[operation_name]
+
+
+def get_operation(operation_name: str) -> Callable[[list[str], dict], Any]:
+    """
+    Get the operation with the given name.
+
+    :param operation_name: The name of the operation.
+    :type operation_name: str
+    :returns: The operation.
+    :rtype: Callable
+    """
+    return OPERATIONS[operation_name]
+
+
 async def execute_operation(operation: str, args: list[str], data: dict) -> Any:
     """
     Execute an operation with the given arguments and data.

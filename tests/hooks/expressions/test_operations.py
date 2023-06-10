@@ -1,7 +1,24 @@
 import pytest
 
-from manifest.hooks.expressions.operations import execute_operation
+from manifest.hooks.expressions.operations import (
+    execute_operation,
+    register_operation,
+    get_operation,
+    unregister_operation
+)
 from manifest.parse import dump_to_file
+
+
+def test_register_unregister_get_operation():
+    def test_func():
+        pass
+
+    register_operation("test", test_func)
+    assert get_operation("test") == test_func
+
+    unregister_operation("test")
+    with pytest.raises(KeyError):
+        get_operation("test")
 
 
 async def test_add_operation():
