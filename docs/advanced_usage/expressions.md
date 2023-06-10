@@ -27,7 +27,7 @@ lower_value: $lower{HELLO}
 
 ## Custom Operations
 
-In addition to the built-in operations, you can define your own custom operations using the `add_operation` method from the `manifest.expressions.operations` module.
+In addition to the built-in operations, you can define your own custom operations using the `register_operation` method from the `manifest.expressions.operations` module.
 
 This function takes two parameters:
 
@@ -56,4 +56,10 @@ result: $multiply{5,10}
 
 In this example, the multiply operation would resolve to 50.
 
-It's worth noting that operation functions can be synchronous or asynchronous, and the Manifest library handles both types automatically. This adds another layer of flexibility to how you can define your custom operations.
+It's worth noting that operation functions can be synchronous or asynchronous, and the Manifest library handles both types automatically. This adds another layer of flexibility to how you can define your custom operations. If you want to unregister an operation, you can use the `unregister_operation` method from the same module, like so:
+
+```python
+from manifest.expressions.operations import unregister_operation
+
+unregister_operation("multiply")
+```
