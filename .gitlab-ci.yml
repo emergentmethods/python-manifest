@@ -265,6 +265,8 @@ deploy-docs:
   <<: *only_tag
   extends: .docker-job
   stage: deploy
+  tags:
+    - em-manager1-runner
   needs:
     - job: get-version
       artifacts: true
