@@ -2,7 +2,7 @@ site_name: Manifest
 site_description: Modern asynchronous application manifest management toolkit.
 site_author: Timothy pogue
 copyright: Emergent Methods, LLC
-site_url: https://docs.emergentmethods.ai/manifest
+site_url: http://docs.emergentmethods.ai/manifest/
 repo_url: https://git.freqai.cloud/wizrds/manifest
 repo_name: manifest
 
