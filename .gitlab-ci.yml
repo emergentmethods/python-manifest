@@ -82,13 +82,12 @@ default:
 # only cache local items.
 variables:
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
-  REPO_URL: "https://release-token:${RELEASE_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
 
 
 # Setup job to install dependencies
 build-env:
   tags:
-    - gitlab-org
+    - gitlab-org-docker
   stage: .pre
   script:
     - python -m venv .venv/
@@ -135,7 +134,7 @@ lint:
   <<: *use_cached_venv
   <<: *no_tag
   tags:
-    - gitlab-org
+    - gitlab-org-docker
   stage: lint
   script:
     - make lint
@@ -145,7 +144,9 @@ bump-version:
   <<: *use_cached_venv
   <<: *only_protected
   tags:
-    - gitlab-org
+    - gitlab-org-docker
+  variables:
+    REPO_URL: "https://${GIT_USER}:${GIT_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
   stage: bump
   before_script:
       # Install semantic-release, not sure why it's not in the venv already
@@ -176,7 +177,7 @@ get-version:
   <<: *use_cached_venv
   <<: *only_tag
   tags:
-    - gitlab-org
+    - gitlab-org-docker
   stage: version
   script:
     # Create release.env
@@ -190,9 +191,9 @@ get-version:
 
 build-docs:
   <<: *use_cached_venv
-  <<: *only_tag
+  # <<: *only_tag
   tags:
-    - gitlab-org
+    - gitlab-org-docker
   stage: build
   script:
     - make docs
@@ -203,7 +204,7 @@ build-docs:
 
 
 build-docs-docker:
-  <<: *only_tag
+  # <<: *only_tag
   extends: .docker-job
   stage: build
   needs:
@@ -220,7 +221,7 @@ build-wheel:
   <<: *use_cached_venv
   <<: *only_tag
   tags:
-    - gitlab-org
+    - gitlab-org-docker
   stage: build
   script:
     # Build the wheel
@@ -235,7 +236,7 @@ make-release:
   <<: *use_cached_venv
   <<: *only_tag
   tags:
-    - gitlab-org
+    - gitlab-org-docker
   stage: release
   needs:
     - job: get-version
@@ -253,7 +254,7 @@ publish-wheel:
   <<: *use_cached_venv
   <<: *only_tag
   tags:
-    - gitlab-org
+    - gitlab-org-docker
   stage: release
   script: |
       # Publish the built wheel to the registry
@@ -262,7 +263,7 @@ publish-wheel:
 
 
 deploy-docs:
-  <<: *only_tag
+  # <<: *only_tag
   extends: .docker-job
   stage: deploy
   tags:
