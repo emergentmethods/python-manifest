@@ -19,6 +19,7 @@ nav:
   - API Reference:
     - Manifest: api/manifest.md
     - Instantiable: api/instantiable.md
+    - Hooks: api/hooks.md
     - Expressions: api/expressions.md
 
 extra_css:

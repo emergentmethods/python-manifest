@@ -19,7 +19,7 @@ pip install python-manifest
 For development, you can install the library from source:
 
 ```bash
-git clone https://github.com/emergentmethods/python-manifest.git
+git clone https://gitlab.com/emergentmethods/python-manifest.git
 cd python-manifest
 pip install poetry # If not already installed
 poetry install
