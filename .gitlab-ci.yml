@@ -4,12 +4,11 @@ image: python:3.10
 stages:
   - test
   - lint
-  - deploy
   - bump
   - version
   - build
   - release
-
+  - deploy
 
 workflow:
   rules:
