@@ -1,4 +1,4 @@
-from manifest.hooks import execute_hook, substitute_env_vars
+from manifest.hooks.builtin import substitute_env_vars
 
 
 def test_substitute_env_vars():
@@ -17,18 +17,3 @@ def test_substitute_env_vars():
     # Assert the result is as expected
     expected_output = b"Text with value1 and value2"
     assert result == expected_output
-
-
-async def test_execute_hook():
-    def hook():
-        return "value"
-
-    async def async_hook():
-        return "async value"
-
-    result = await execute_hook(hook)
-    result_async = await execute_hook(async_hook)
-
-    # Assert the result is as expected
-    assert result == "value"
-    assert result_async == "async value"

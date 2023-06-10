@@ -16,18 +16,13 @@ Manifest provides a variety of built-in operations that can be used with express
 | `reverse` 	| Reverse a string              	| `$reverse{hello}` 	|
 | `upper`   	| Convert a string to uppercase 	| `$upper{hello}`   	|
 | `lower`   	| Convert a string to lowercase 	| `$lower{HELLO}`   	|
+| `ref`     	| Get a value from the context  	| `$ref{key}` or `$ref{path|key}`  	|
+| `sum`     	| Sum a list of numbers         	| `$sum{1,2,3}`     	|
 
-The above operations are used in expressions as follows:
-
-```yaml
-name_value: $reverse{olleH}
-upper_value: $upper{hello}
-lower_value: $lower{HELLO}
-```
 
 ## Custom Operations
 
-In addition to the built-in operations, you can define your own custom operations using the `add_operation` method from the `manifest.expressions.operations` module.
+In addition to the built-in operations, you can define your own custom operations using the `register_operation` method from the `manifest.expressions.operations` module.
 
 This function takes two parameters:
 
@@ -39,13 +34,13 @@ This function takes two parameters:
 Here is an example of creating a custom operation:
 
 ```python
-from manifest.expressions.operations import add_operation
+from manifest.expressions.operations import register_operation
 
 def multiply(args: list[str], context: dict) -> int:
     # This function ignores the context and simply multiplies the arguments.
     return int(args[0]) * int(args[1])
 
-add_operation("multiply", multiply)
+register_operation("multiply", multiply)
 ```
 
 Now we can use our new operation in our configuration:
@@ -56,4 +51,10 @@ result: $multiply{5,10}
 
 In this example, the multiply operation would resolve to 50.
 
-It's worth noting that operation functions can be synchronous or asynchronous, and the Manifest library handles both types automatically. This adds another layer of flexibility to how you can define your custom operations.
+It's worth noting that operation functions can be synchronous or asynchronous, and the Manifest library handles both types automatically. This adds another layer of flexibility to how you can define your custom operations. If you want to unregister an operation, you can use the `unregister_operation` method from the same module, like so:
+
+```python
+from manifest.expressions.operations import unregister_operation
+
+unregister_operation("multiply")
+```

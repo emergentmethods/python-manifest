@@ -2,11 +2,10 @@ import os
 from pydantic import BaseModel
 from typing import Any, Union, Mapping, AbstractSet, Callable, cast
 from dotenv import dotenv_values
-from functools import partial
 
 from manifest.parse import (
     parse_files,
-    parse_dot_list,
+    parse_key_values,
     parse_env_vars,
     dump_to_file,
 )
@@ -15,8 +14,6 @@ from manifest.utils import (
     merge_dicts_flat,
     merge_dicts
 )
-from manifest.hooks import substitute_env_vars
-from manifest.expressions import resolve_expressions
 
 
 class Manifest(
@@ -104,20 +101,11 @@ class Manifest(
             ]
         )
 
-        # Add the built-in pre-process hooks
-        _builtin_pre_process_hooks = [
-            partial(substitute_env_vars, env_vars=env_vars)
-        ]
-        # Add the built-in post-process hooks
-        _builtin_post_process_hooks = [
-            resolve_expressions
-        ]
-
         # Parse the files if they are provided
         parsed_files = await parse_files(
             files=files,
-            pre_process_hooks=_builtin_pre_process_hooks + pre_process_hooks,
-            post_process_hooks=_builtin_post_process_hooks + post_process_hooks,
+            pre_process_hooks=pre_process_hooks,
+            post_process_hooks=post_process_hooks,
             **filesystem_options
         ) if files else {}
 
@@ -129,7 +117,7 @@ class Manifest(
         )
 
         # Parse any key_values provided
-        parsed_overrides = parse_dot_list(key_values)
+        parsed_overrides = parse_key_values(key_values)
 
         # Merge everything together into a single material dictionary
         material = merge_dicts(parsed_files, parsed_env_vars, parsed_overrides, kwargs)
@@ -158,19 +146,10 @@ class Manifest(
         :type kwargs: dict[str, Any]
         :return: The built Manifest
         """
-        # Add the built-in pre-process hooks
-        _builtin_pre_process_hooks = [
-            substitute_env_vars
-        ]
-        # Add the built-in post-process hooks
-        _builtin_post_process_hooks = [
-            resolve_expressions
-        ]
-
         parsed_files = await parse_files(
             files=files,
-            pre_process_hooks=_builtin_pre_process_hooks + pre_process_hooks,
-            post_process_hooks=_builtin_post_process_hooks + post_process_hooks,
+            pre_process_hooks=pre_process_hooks,
+            post_process_hooks=post_process_hooks,
             **filesystem_options
         )
 
@@ -232,7 +211,7 @@ class Manifest(
         :type kwargs: dict[str, Any]
         :return: The built Manifest
         """
-        parsed_key_values = parse_dot_list(key_values)
+        parsed_key_values = parse_key_values(key_values)
 
         return cls(**{**parsed_key_values, **kwargs})
 

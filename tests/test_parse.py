@@ -3,7 +3,7 @@ import pytest
 from manifest.parse import (
     get_serializer_from_type,
     determine_file_type,
-    parse_dot_list,
+    parse_key_values,
     parse_env_vars,
     load_from_file,
     dump_to_file,
@@ -36,9 +36,9 @@ def test_get_serializer_from_type():
         get_serializer_from_type("Unsupported")
 
 
-def test_parse_dot_list():
-    assert parse_dot_list(["a.b.c=5"]) == {"a": {"b": {"c": 5}}}
-    assert parse_dot_list(["a.b.c=5", "a.b.d=6"]) == {"a": {"b": {"c": 5, "d": 6}}}
+def test_parse_key_values():
+    assert parse_key_values(["a.b.c=5"]) == {"a": {"b": {"c": 5}}}
+    assert parse_key_values(["a.b.c=5", "a.b.d=6"]) == {"a": {"b": {"c": 5, "d": 6}}}
 
 
 @pytest.mark.parametrize(
