@@ -15,7 +15,7 @@ from manifest.hooks import execute_hook, get_hooks
 from manifest.utils import (
     merge_dicts_flat,
     merge_dicts,
-    DotDict,
+    set_by_dot_path,
     run_in_thread,
     get_filename_suffix,
     coerce_to_basic_types
@@ -335,11 +335,8 @@ def parse_key_value(key_value: str) -> dict:
     :return: A dictionary containing the parsed key-value pair.
     :rtype: dict[str, Any]
     """
-    parsed_dict = DotDict()
     k, v = key_value.split("=")
-    parsed_dict[k] = coerce_to_basic_types(v)
-
-    return dict(parsed_dict)
+    return set_by_dot_path({}, k, coerce_to_basic_types(v))
 
 
 def parse_key_values(key_values: list[str]) -> dict:

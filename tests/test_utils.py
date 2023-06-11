@@ -3,7 +3,9 @@ from pathlib import Path
 
 from manifest.utils import (
     is_async_callable,
-    DotDict,
+    get_by_dot_path,
+    set_by_dot_path,
+    unset_by_dot_path,
     current_directory,
     import_from_string,
     merge_dicts_flat,
@@ -24,39 +26,39 @@ def test_is_async_callable():
     assert not is_async_callable(sync_func)
 
 
-def test_dot_dict():
-    data = {
-        "a": 1,
-        "b": {"c": 2},
-        "d": {"e": {"f": 3}},
-        "g": [4, 5],
-    }
-    dot_dict = DotDict(data)
+def test_get_by_dot_path():
+    data = {"a": {"b": {"c": 3}}}
 
-    assert dot_dict["a"] == 1
-    assert dot_dict["b.c"] == 2
-    assert dot_dict["b"]["c"] == 2
-    assert dot_dict["d.e.f"] == 3
-    assert dot_dict["d"]["e"]["f"] == 3
-    assert dot_dict["g"] == [4, 5]
+    assert get_by_dot_path(data, "a.b.c") == 3
+    assert get_by_dot_path(data, "a.b.d", default=5) == 5
+    assert get_by_dot_path(data, "a.d", default=10) == 10
 
-    with pytest.raises(KeyError):
-        _ = dot_dict["nonexistent"]
+    with pytest.raises(AssertionError):
+        get_by_dot_path([1, 2, 3], "0")
 
-    dot_dict["new.key"] = "value"
-    assert dot_dict["new.key"] == "value"
 
-    del dot_dict["new.key"]
-    with pytest.raises(KeyError):
-        _ = dot_dict["new.key"]
+def test_set_by_dot_path():
+    data = {"a": {"b": {"c": 3}}}
 
-    with pytest.raises(KeyError):
-        del dot_dict["nonexistent"]
+    assert set_by_dot_path(data, "a.b.c", 4) == {"a": {"b": {"c": 4}}}
+    assert set_by_dot_path(data, "a.b.d", 5) == {"a": {"b": {"c": 4, "d": 5}}}
+    assert set_by_dot_path(data, "a.e.f", 6) == {"a": {"b": {"c": 4, "d": 5}, "e": {"f": 6}}}
 
-    with pytest.raises(KeyError):
-        del dot_dict["d.e.z"]
+    with pytest.raises(AssertionError):
+        set_by_dot_path([1, 2, 3], "0", 4)
 
-    assert dot_dict.get("a", None) == 1
+
+def test_unset_by_dot_path():
+    data = {"a": {"b": {"c": 3}}}
+
+    assert unset_by_dot_path(data, "a.b.c") == {"a": {"b": {}}}
+    assert unset_by_dot_path(data, "a.b") == {"a": {}}
+    assert unset_by_dot_path(data, "a") == {}
+
+    with pytest.raises(AssertionError):
+        unset_by_dot_path([1, 2, 3], "0")
+
+    assert unset_by_dot_path({"a": 1}, "b.c") == {"a": 1}
 
 
 def test_current_directory(tmpdir):

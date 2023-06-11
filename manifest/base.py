@@ -13,7 +13,10 @@ from manifest.parse import (
 from manifest.utils import (
     coerce_to_basic_types,
     merge_dicts_flat,
-    merge_dicts
+    merge_dicts,
+    get_by_dot_path,
+    set_by_dot_path,
+    unset_by_dot_path
 )
 
 T = TypeVar("T", bound="Manifest")
@@ -214,8 +217,53 @@ class Manifest(
         :return: The built Manifest
         """
         parsed_key_values = parse_key_values(key_values)
-
         return cls(**{**parsed_key_values, **kwargs})
+
+    def set_by_key(self, key: str, value: Any):
+        """
+        Get a copy of the Manifest with the given key set to the given value.
+
+        :param key: The key to set which looks like `a.b.c` for nested parameters
+        :type key: str
+        :param value: The value to set
+        :type value: Any
+        :return: A copy of the Manifest with the given key set to the given value
+        """
+        return self.copy(
+            update=set_by_dot_path(
+                self.normalize(),
+                key,
+                value
+            )
+        )
+
+    def unset_by_key(self, key: str):
+        """
+        Get a copy of the Manifest with the given key unset.
+
+        :param key: The key to unset which looks like `a.b.c` for nested parameters
+        :type key: str
+        :return: A copy of the Manifest with the given key unset
+        """
+        return type(self)(
+            **unset_by_dot_path(
+                self.normalize(),
+                key
+            )
+        )
+
+    def get_by_key(self, key: str):
+        """
+        Get the value of a key in the Manifest.
+
+        :param key: The key to get which looks like `a.b.c` for nested parameters
+        :type key: str
+        :return: The value of the key
+        """
+        return get_by_dot_path(
+            self.normalize(),
+            key
+        )
 
     async def to_file(
         self,

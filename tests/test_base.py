@@ -150,3 +150,43 @@ async def test_manifest_to_file(test_config_files):
     assert (await config.to_file("memory://test.json")) > 0
     # Test YAML
     assert (await config.to_file("memory://test.yml")) > 0
+
+
+async def test_manifest_set_by_key(test_config_files):
+    config = await MyManifest.from_key_values(
+        key_values=["x=10", "database=someotherplace"]
+    )
+
+    assert config.x == 10
+    assert config.database == "someotherplace"
+
+    config = config.set_by_key("x", 1)
+    config = config.set_by_key("database", "sqlite:///database.db")
+
+    assert config.x == 1
+    assert config.database == "sqlite:///database.db"
+
+
+async def test_manifest_unset_by_key(test_config_files):
+    config = await MyManifest.from_key_values(
+        key_values=["x=10", "database=someotherplace"]
+    )
+
+    assert config.x == 10
+    assert config.database == "someotherplace"
+
+    config = config.unset_by_key("x")
+    config = config.unset_by_key("database")
+
+    assert config.x == 5
+    assert config.database == "sqlite:///database.db"
+
+
+async def test_manifest_get_by_key(test_config_files):
+    config = await MyManifest.from_key_values(
+        key_values=["x=10", "database=someotherplace"]
+    )
+
+    assert config.get_by_key("x") == 10
+    assert config.get_by_key("database") == "someotherplace"
+    assert config.get_by_key("nested.foo") == True

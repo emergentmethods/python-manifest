@@ -3,7 +3,6 @@ import os
 from typing import Any, Callable, Union
 from pathlib import Path
 from functools import partial
-from collections import UserDict
 from fsspec.core import url_to_fs
 from contextlib import contextmanager
 
@@ -36,111 +35,69 @@ async def run_in_thread(func: Callable, *args, **kwargs):
     )
 
 
-class DotDict(UserDict):
+def get_by_dot_path(data: dict, dot_path: str, default: Any = None) -> Any:
     """
-    A dictionary-like object that supports dot paths as keys.
+    Get the value at the specified dot path.
 
-    Inherits from UserDict to provide a dictionary-like interface.
+    :param data: The dictionary to get the value from.
+    :param dot_path: A string representing the dot path to the desired value.
+    :return: The value at the specified dot path.
     """
+    assert isinstance(data, dict), "data must be a dictionary"
+    keys = dot_path.split('.')
 
-    def __init__(self, data: dict | None = None) -> None:
-        super().__init__(data or {})
+    try:
+        for k in keys:
+            data = data[k]
+        return data
+    except (KeyError, TypeError):
+        return default
 
-    def __getitem__(self, key):
-        """
-        Get the value at the specified dot path.
 
-        :param key: A string representing the dot path to the desired value.
-        :return: The value at the specified dot path.
-        :raises KeyError: If the dot path does not exist in the DotDict.
-        """
-        value = self.get_by_dot_path(key)
+def set_by_dot_path(data: dict, dot_path: str, value: Any) -> dict:
+    """
+    Set the value at the specified dot path.
 
-        if value is None:
-            raise KeyError(key)
+    :param data: The dictionary to set the value in.
+    :param field_path: A string representing the dot path to the desired value.
+    :param value: The value to be set at the specified dot path.
+    """
+    assert isinstance(data, dict), "data must be a dictionary"
+    keys = dot_path.split('.')
 
-        return value
+    ref = data
+    # Iterate through the keys and set the value at the final key.
+    for k in keys[:-1]:
+        ref = ref.setdefault(k, {})
 
-    def __setitem__(self, key, value):
-        """
-        Set the value at the specified dot path.
+    ref[keys[-1]] = value
+    return data
 
-        :param key: A string representing the dot path to the desired value.
-        :param value: The value to be set at the specified dot path.
-        :raises KeyError: If the dot path does not exist in the DotDict and
-                          its parent keys cannot be created.
-        """
-        self.set_by_dot_path(key, value)
 
-    def __delitem__(self, key):
-        """
-        Delete the key-value pair at the specified dot path.
+def unset_by_dot_path(data: dict, dot_path: str) -> dict:
+    """
+    Delete the key-value pair at the specified dot path.
 
-        :param key: A string representing the dot path to the desired key-value pair.
-        :raises KeyError: If the dot path does not exist in the DotDict.
-        """
-        self.unset_by_dot_path(key)
+    :param data: The dictionary to delete the key-value pair from.
+    :param dot_path: A string representing the dot path to the desired key-value pair.
+    """
+    assert isinstance(data, dict), "data must be a dictionary"
+    keys = dot_path.split('.')
 
-    def get(self, key: str, default: Any = None) -> Any:
-        """
-        Get the value at the specified dot path.
-
-        :param key: A string representing the dot path to the desired value.
-        :param default: Optional default value to return if the dot path does not exist.
-        :return: The value at the specified dot path, or the default value.
-        """
-        return self.get_by_dot_path(key, default)
-
-    def get_by_dot_path(self, dot_path: str, default: Any = None) -> Any:
-        """
-        Get the value at the specified dot path.
-
-        :param dot_path: A string representing the dot path to the desired value.
-        :param default: Optional default value to return if the dot path does not exist.
-        :return: The value at the specified dot path, or the default value.
-        """
-        keys = dot_path.split('.')
-        current_data = self.data
-        for key in keys:
-            if key in current_data:
-                current_data = current_data[key]
-            else:
-                return default
-        return current_data
-
-    def set_by_dot_path(self, dot_path: str, value: Any) -> None:
-        """
-        Set the value at the specified dot path.
-
-        :param dot_path: A string representing the dot path to the desired value.
-        :param value: The value to be set at the specified dot path.
-        :raises KeyError: If the dot path does not exist in the DotDict and
-                          its parent keys cannot be created.
-        """
-        keys = dot_path.split('.')
-        current_data = self.data
-        for key in keys[:-1]:
-            current_data = current_data.setdefault(key, {})
-        current_data[keys[-1]] = value
-
-    def unset_by_dot_path(self, dot_path: str) -> None:
-        """
-        Delete the key-value pair at the specified dot path.
-
-        :param dot_path: A string representing the dot path to the desired key-value pair.
-        :raises KeyError: If the dot path does not exist in the DotDict.
-        """
-        keys = dot_path.split('.')
-        current_data = self.data
-        for key in keys[:-1]:
-            if key in current_data:
-                current_data = current_data[key]
-            else:
-                raise KeyError(dot_path)
+    ref = data
+    # Iterate through the keys and get the dictionary at the penultimate key.
+    for k in keys[:-1]:
         try:
-            del current_data[keys[-1]]
+            ref = ref[k]
         except KeyError:
-            raise KeyError(dot_path)
+            # If a key in the path doesn't exist, there's nothing to unset
+            return data
+
+    # Delete the value at the final key.
+    if keys[-1] in ref:
+        del ref[keys[-1]]
+
+    return data
 
 
 @contextmanager
