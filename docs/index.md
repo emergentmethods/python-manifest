@@ -7,7 +7,7 @@
 
 ---
 
-**Source code**: [https://github.com/emergentmethods/python-manifest](https://github.com/emergentmethods/python-manifest)
+**Source code**: [https://gitlab.com/emergentmethods/python-manifest](https://gitlab.com/emergentmethods/python-manifest)
 
 ---
 
