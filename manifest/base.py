@@ -1,6 +1,6 @@
 import os
 from pydantic import BaseModel
-from typing import Any, Union, Mapping, AbstractSet, Callable, cast
+from typing import TypeVar, Type, Any, Union, Mapping, AbstractSet, Callable, cast
 from dotenv import dotenv_values
 
 from manifest.parse import (
@@ -15,6 +15,7 @@ from manifest.utils import (
     merge_dicts
 )
 
+T = TypeVar("T", bound="Manifest")
 
 class Manifest(
     BaseModel,
@@ -58,7 +59,7 @@ class Manifest(
 
     @classmethod
     async def build(
-        cls,
+        cls: Type[T],
         files: list[str] = [],
         dotenv_files: list[str] = [],
         key_values: list[str] = [],
@@ -68,7 +69,7 @@ class Manifest(
         post_process_hooks: list[Callable] = [],
         filesystem_options: dict[str, Any] = {},
         **kwargs
-    ) -> "Manifest":
+    ) -> T:
         """
         Build the Manifest from a variety of sources.
 
@@ -126,13 +127,13 @@ class Manifest(
 
     @classmethod
     async def from_files(
-        cls,
+        cls: Type[T],
         files: list[str],
         pre_process_hooks: list[Callable] = [],
         post_process_hooks: list[Callable] = [],
         filesystem_options: dict = {},
         **kwargs
-    ) -> "Manifest":
+    ) -> T:
         """
         Build the Manifest from a list of files.
 
@@ -157,12 +158,12 @@ class Manifest(
 
     @classmethod
     async def from_env(
-        cls,
+        cls: Type[T],
         dotenv_files: list[str] = [],
         env_prefix: str = "CONFIG",
         env_delimiter: str = "__",
         **kwargs
-    ) -> "Manifest":
+    ) -> T:
         """
         Get the Manifest from environment variables.
 
@@ -198,10 +199,10 @@ class Manifest(
 
     @classmethod
     async def from_key_values(
-        cls,
+        cls: Type[T],
         key_values: list[str],
         **kwargs
-    ) -> "Manifest":
+    ) -> T:
         """
         Build the Manifest from a list of key-value pairs.
 
