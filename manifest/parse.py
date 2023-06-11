@@ -1,6 +1,7 @@
 import os
 from typing import Any, Callable
 from contextvars import ContextVar
+from pathlib import Path
 from fsspec import open as fsspec_open, AbstractFileSystem
 from fsspec.core import url_to_fs
 
@@ -132,7 +133,7 @@ async def write_to_file(file: str, content: bytes, **kwargs) -> int:
 
 
 async def dump_to_file(
-    file: str,
+    file: str | Path,
     data: dict,
     pre_process_hooks: list[Callable] = [],
     post_process_hooks: list[Callable] = [],
@@ -156,12 +157,13 @@ async def dump_to_file(
     :return: The number of bytes written to the file.
     :rtype: int
     """
+    string_path = str(file)
     assert isinstance(data, dict), "`data` must be a dictionary"
 
     # Get the serializer for the file type
     serializer = get_serializer_from_type(
         _type=determine_file_type(
-            get_filename_suffix(file)
+            get_filename_suffix(string_path)
         ),
         _default=default_serializer
     )
@@ -171,7 +173,7 @@ async def dump_to_file(
 
     # Set the current file context variable to have a reference of the current file
     # being worked on in the hooks
-    token = current_file.set(file)
+    token = current_file.set(string_path)
 
     try:
         # Pre-process the data
@@ -189,11 +191,11 @@ async def dump_to_file(
         current_file.reset(token)
 
     # Write the serialized data to the file
-    return await write_to_file(file, serialized_data, **kwargs)
+    return await write_to_file(string_path, serialized_data, **kwargs)
 
 
 async def load_from_file(
-    file: str,
+    file: str | Path,
     pre_process_hooks: list[Callable] = [],
     post_process_hooks: list[Callable] = [],
     default_serializer: Any = Undefined,
@@ -211,10 +213,12 @@ async def load_from_file(
     :return: The parsed data from the file.
     :rtype: Any
     """
+    string_path = str(file)
+
     # Get the serializer for the file type
     serializer = get_serializer_from_type(
         _type=determine_file_type(
-            get_filename_suffix(file)
+            get_filename_suffix(string_path)
         ),
         _default=default_serializer
     )
@@ -222,7 +226,7 @@ async def load_from_file(
     pre_process_hooks = get_hooks("pre", operation="load") + pre_process_hooks
     post_process_hooks = get_hooks("post", operation="load") + post_process_hooks
 
-    parsed_info = parse_file_path(file)
+    parsed_info = parse_file_path(string_path)
 
     if parsed_info["is_local"]:
         if not os.path.isabs(file):
@@ -231,10 +235,10 @@ async def load_from_file(
             file = parsed_info["path"]
 
     # Read the file
-    raw_data = await read_from_file(file, **kwargs)
+    raw_data = await read_from_file(string_path, **kwargs)
     # Set the current file context variable to have a reference of the current file
     # being worked on in the hooks
-    token = current_file.set(file)
+    token = current_file.set(string_path)
 
     try:
         # Pre-process the file contents
@@ -259,7 +263,7 @@ async def load_from_file(
 
 
 async def parse_files(
-    files: list[str],
+    files: list[str | Path],
     pre_process_hooks: list[Callable] = [],
     post_process_hooks: list[Callable] = [],
     **kwargs

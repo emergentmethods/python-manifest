@@ -1,5 +1,6 @@
 import os
 from pydantic import BaseModel
+from pathlib import Path
 from typing import TypeVar, Type, Any, Union, Mapping, AbstractSet, Callable, cast
 from dotenv import dotenv_values
 
@@ -60,7 +61,7 @@ class Manifest(
     @classmethod
     async def build(
         cls: Type[T],
-        files: list[str] = [],
+        files: list[str | Path] = [],
         dotenv_files: list[str] = [],
         key_values: list[str] = [],
         env_prefix: str = "CONFIG",
@@ -128,7 +129,7 @@ class Manifest(
     @classmethod
     async def from_files(
         cls: Type[T],
-        files: list[str],
+        files: list[str | Path],
         pre_process_hooks: list[Callable] = [],
         post_process_hooks: list[Callable] = [],
         filesystem_options: dict = {},
@@ -168,7 +169,7 @@ class Manifest(
         Get the Manifest from environment variables.
 
         :param dotenv_files: A list of dotenv files to parse, optional
-        :type dotenv_files: list[Path]
+        :type dotenv_files: list[str]
         :param env_prefix: A prefix to identify environment variables to parse
         :type env_prefix: str
         :param env_delimiter: The delimiter used in the environment variables
@@ -218,7 +219,7 @@ class Manifest(
 
     async def to_file(
         self,
-        file_path: str,
+        file_path: str | Path,
         pre_process_hooks: list[Callable] = [],
         post_process_hooks: list[Callable] = [],
         filesystem_options: dict = {}
