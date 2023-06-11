@@ -9,8 +9,8 @@ def parse_expression(expression: str) -> dict | None:
     Parses an expression string and returns the matched objects,
     or None if the string is not an expression.
 
-    An expression is a string that starts with "$", contains at least one "{" and one "}",
-    and is assumed to be in the format "$operation_name{arg,arg}".
+    An expression is a string that starts with `$`, contains at least one `{` and one `}`,
+    and is assumed to be in the format `$operation_name{arg,arg}`.
 
     :param expression: The expression string to parse.
     :type expression: str
@@ -38,6 +38,11 @@ async def resolve_expression(expression: str, context: dict) -> Any:
     This function takes an expression string in the format "$operation_name{arg}" and
     a context, and returns the resolved value.
 
+    Example:
+
+        >>> resolve_expression("$reverse{hello}", {})
+        "olleh"
+
     :param expression: The expression string to be resolved.
     :type expression: str
     :param context: The context to resolve the expression in.
@@ -45,10 +50,6 @@ async def resolve_expression(expression: str, context: dict) -> Any:
     :returns: The resolved value.
     :rtype: Any
     :raises ValueError: If the expression string is invalid or unknown.
-
-    :Example:
-        >>> resolve_expression("$reverse{hello}", {})
-        "olleh"
     """
     # Parse the expression string
     parsed = parse_expression(expression)

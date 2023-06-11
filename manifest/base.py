@@ -1,5 +1,6 @@
 import os
 from pydantic import BaseModel
+from pathlib import Path
 from typing import TypeVar, Type, Any, Union, Mapping, AbstractSet, Callable, cast
 from dotenv import dotenv_values
 
@@ -12,7 +13,10 @@ from manifest.parse import (
 from manifest.utils import (
     coerce_to_basic_types,
     merge_dicts_flat,
-    merge_dicts
+    merge_dicts,
+    get_by_dot_path,
+    set_by_dot_path,
+    unset_by_dot_path
 )
 
 T = TypeVar("T", bound="Manifest")
@@ -60,7 +64,7 @@ class Manifest(
     @classmethod
     async def build(
         cls: Type[T],
-        files: list[str] = [],
+        files: list[str | Path] = [],
         dotenv_files: list[str] = [],
         key_values: list[str] = [],
         env_prefix: str = "CONFIG",
@@ -128,7 +132,7 @@ class Manifest(
     @classmethod
     async def from_files(
         cls: Type[T],
-        files: list[str],
+        files: list[str | Path],
         pre_process_hooks: list[Callable] = [],
         post_process_hooks: list[Callable] = [],
         filesystem_options: dict = {},
@@ -168,7 +172,7 @@ class Manifest(
         Get the Manifest from environment variables.
 
         :param dotenv_files: A list of dotenv files to parse, optional
-        :type dotenv_files: list[Path]
+        :type dotenv_files: list[str]
         :param env_prefix: A prefix to identify environment variables to parse
         :type env_prefix: str
         :param env_delimiter: The delimiter used in the environment variables
@@ -213,12 +217,57 @@ class Manifest(
         :return: The built Manifest
         """
         parsed_key_values = parse_key_values(key_values)
-
         return cls(**{**parsed_key_values, **kwargs})
+
+    def set_by_key(self, key: str, value: Any):
+        """
+        Get a copy of the Manifest with the given key set to the given value.
+
+        :param key: The key to set which looks like `a.b.c` for nested parameters
+        :type key: str
+        :param value: The value to set
+        :type value: Any
+        :return: A copy of the Manifest with the given key set to the given value
+        """
+        return self.copy(
+            update=set_by_dot_path(
+                self.normalize(),
+                key,
+                value
+            )
+        )
+
+    def unset_by_key(self, key: str):
+        """
+        Get a copy of the Manifest with the given key unset.
+
+        :param key: The key to unset which looks like `a.b.c` for nested parameters
+        :type key: str
+        :return: A copy of the Manifest with the given key unset
+        """
+        return type(self)(
+            **unset_by_dot_path(
+                self.normalize(),
+                key
+            )
+        )
+
+    def get_by_key(self, key: str):
+        """
+        Get the value of a key in the Manifest.
+
+        :param key: The key to get which looks like `a.b.c` for nested parameters
+        :type key: str
+        :return: The value of the key
+        """
+        return get_by_dot_path(
+            self.normalize(),
+            key
+        )
 
     async def to_file(
         self,
-        file_path: str,
+        file_path: str | Path,
         pre_process_hooks: list[Callable] = [],
         post_process_hooks: list[Callable] = [],
         filesystem_options: dict = {}

@@ -13,13 +13,16 @@ async def ref_op(args: list[str], data: dict) -> Any:
     then the `key_path` value is retrieved from that file.
 
     Example:
+
         ```py
         >>> ref_operation("compute.cpus", {"compute": {"cpus": 4}})
         4
         >>> ref_operation("config.yaml|compute.cpus", {})
         4
         ```
+
     Or in a manifest:
+
         ```yaml
         compute:
             cpus: 4
