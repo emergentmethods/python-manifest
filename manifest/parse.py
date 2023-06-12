@@ -134,10 +134,11 @@ async def write_to_file(file: str, content: bytes, **kwargs) -> int:
 
 async def dump_to_file(
     file: str | Path,
-    data: dict,
+    data: Any,
     pre_process_hooks: list[Callable] = [],
     post_process_hooks: list[Callable] = [],
     default_serializer: Any = Undefined,
+    root_alias: str = "__root__",
     **kwargs
 ) -> int:
     """
@@ -147,7 +148,7 @@ async def dump_to_file(
     :param file: The path to the file to be written to.
     :type file: str
     :param data: The data to be persisted to the file.
-    :type data: dict
+    :type data: Any
     :param serializer: The serializer to be used to serialize the data.
     :type serializer: Serializer
     :param pre_process_hooks: A list of hooks to be called before serializing the data.
@@ -158,7 +159,9 @@ async def dump_to_file(
     :rtype: int
     """
     string_path = str(file)
-    assert isinstance(data, dict), "`data` must be a dictionary"
+
+    if isinstance(data, dict) and root_alias in data:
+        data = data[root_alias]
 
     # Get the serializer for the file type
     serializer = get_serializer_from_type(
@@ -199,8 +202,9 @@ async def load_from_file(
     pre_process_hooks: list[Callable] = [],
     post_process_hooks: list[Callable] = [],
     default_serializer: Any = Undefined,
+    root_alias: str = "__root__",
     **kwargs
-) -> dict:
+) -> Any:
     """
     Parse a file by loading it, deserializing it, and returning the resulting dictionary.
 
@@ -246,11 +250,15 @@ async def load_from_file(
             raw_data = await execute_hook(pre_hook, raw_data)
 
         # Deserialize the file contents
-        data: dict = serializer.loads(raw_data)
+        data = serializer.loads(raw_data)
 
         # Handle empty files
         if not data:
             data = {}
+
+        # Handle files with different root types
+        if not isinstance(data, dict):
+            data = {root_alias: data}
 
         # Post-process the file contents
         for post_hook in post_process_hooks:
