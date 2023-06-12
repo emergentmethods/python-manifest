@@ -161,6 +161,36 @@ class Manifest(
         return cls(**{**parsed_files, **kwargs})
 
     @classmethod
+    async def from_file(
+        cls: Type[T],
+        file_path: str | Path,
+        pre_process_hooks: list[Callable] = [],
+        post_process_hooks: list[Callable] = [],
+        filesystem_options: dict = {},
+        **kwargs
+    ) -> T:
+        """
+        Build the Manifest from a file.
+
+        :param file_path: The path to the file to parse
+        :type file_path: str
+        :param pre_process_hooks: A list of pre-process hooks to run before deserialization
+        :type pre_process_hooks: list[Callable]
+        :param post_process_hooks: A list of post-process hooks to run after deserialization
+        :type post_process_hooks: list[Callable]
+        :param kwargs: Additional keyword arguments to pass to the model
+        :type kwargs: dict[str, Any]
+        :return: The built Manifest
+        """
+        return await cls.from_files(
+            files=[file_path],
+            pre_process_hooks=pre_process_hooks,
+            post_process_hooks=post_process_hooks,
+            filesystem_options=filesystem_options,
+            **kwargs
+        )
+
+    @classmethod
     async def from_env(
         cls: Type[T],
         dotenv_files: list[str] = [],
@@ -270,7 +300,8 @@ class Manifest(
         file_path: str | Path,
         pre_process_hooks: list[Callable] = [],
         post_process_hooks: list[Callable] = [],
-        filesystem_options: dict = {}
+        filesystem_options: dict = {},
+        **kwargs
     ) -> int:
         """
         Save the Manifest to a file.
@@ -285,7 +316,7 @@ class Manifest(
         """
         return await dump_to_file(
             file=file_path,
-            data=self.normalize(),
+            data=self.normalize(**kwargs),
             pre_process_hooks=pre_process_hooks,
             post_process_hooks=post_process_hooks,
             **filesystem_options
