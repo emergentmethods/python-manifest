@@ -79,4 +79,18 @@ config = config.unset_by_key("a.b.c")
 ???+ "Note"
     When working with your Manifest and using `set_by_key`, and `unset_by_key`, you should always assign the result back to the original Manifest. This is because these methods return a new Manifest with the updated values, rather than modifying the original Manifest.
 
+There is even support for Manifests with custom root types:
+
+```python
+class MyList(Manifest):
+    __root__: list[int]
+
+config = await MyList.from_files(["path/to/list.json"])
+print(config.__root__) # [1, 2, 3]
+
+await config.to_file("path/to/list.json")
+
+# path/to/list.json -> [1, 2, 3]
+```
+
 These features make Manifest a powerful tool for managing your application manifests and configurations. To learn more about the advanced features of Manifest, including expressions and the Instantiable class, head over to the [Advanced Usage guide](advanced_usage/index.md).
