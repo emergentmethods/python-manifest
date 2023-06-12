@@ -37,6 +37,11 @@ async def test_config_files():
         }
     )
 
+    await dump_to_file(
+        "memory://alternate.json",
+        [1, 2, 3]
+    )
+
 
 async def test_manifest_build(test_config_files):
     files = ["memory://base.json", "memory://nested.yml"]
@@ -190,3 +195,19 @@ async def test_manifest_get_by_key(test_config_files):
     assert config.get_by_key("x") == 10
     assert config.get_by_key("database") == "someotherplace"
     assert config.get_by_key("nested.foo") == True
+
+
+async def test_alternate_root_manifest(test_config_files) -> None:
+    file = "memory://alternate.json"
+
+    class MyManifest(Manifest):
+        __root__: list[int] = []
+
+    config = await MyManifest.from_files([file])
+    assert config.__root__ == [1, 2, 3]
+
+    config.__root__.append(4)
+    await config.to_file(file)
+
+    config = await MyManifest.from_files([file])
+    assert config.__root__ == [1, 2, 3, 4]

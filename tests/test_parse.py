@@ -140,6 +140,14 @@ async def test_read_write_to_file(file_path, content):
         (
             "memory://empty.json",
             {}
+        ),
+        (
+            "memory://list.json",
+            [1, 2, 3]
+        ),
+        (
+            "memory://empty_list.yaml",
+            []
         )
     ]
 )
