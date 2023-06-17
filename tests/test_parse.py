@@ -37,8 +37,9 @@ def test_get_serializer_from_type():
 
 
 def test_parse_key_values():
-    assert parse_key_values(["a.b.c=5"]) == {"a": {"b": {"c": 5}}}
-    assert parse_key_values(["a.b.c=5", "a.b.d=6"]) == {"a": {"b": {"c": 5, "d": 6}}}
+    assert parse_key_values(["a.b.c=5"]) == {"a": {"b": {"c": "5"}}}
+    assert parse_key_values(["a.b.c=5", "a.b.d=6"]) == {"a": {"b": {"c": "5", "d": "6"}}}
+    assert parse_key_values(["a.b.c=5", "a.b.d=6", "a.b=7"], coerce=True) == {"a": {"b": 7}}
 
 
 @pytest.mark.parametrize(

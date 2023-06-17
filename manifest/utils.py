@@ -216,9 +216,43 @@ def get_filename_suffix(file_path: str):
     return file_extension
 
 
+def coerce_sequence(value: list | tuple) -> list:
+    return [coerce_to_basic_types(item) for item in value]
+
+def coerce_dict(value: dict) -> dict:
+    return {k: coerce_to_basic_types(v) for k, v in value.items()}
+
+def coerce_object(value: object) -> dict:
+    if hasattr(value, '__dict__'):
+        try:
+            return coerce_dict(value.__dict__)
+        except AttributeError:
+            pass
+    return {}
+
+
+def coerce_str(value: str) -> Union[int, float, str, bool, None]:
+    normalized = value.strip().lower()
+    if normalized in ['true', 'false']:
+        return normalized == 'true'
+    elif normalized in ['none', 'null']:
+        return None
+    return coerce_num(value)
+
+
+def coerce_num(value: Union[int, float, str]) -> Union[int, float, str]:
+    try:
+        if "." not in str(value):
+            return int(value)
+        else:
+            return float(value)
+    except ValueError:
+        return str(value)
+
+
 def coerce_to_basic_types(value: Any) -> Union[int, float, bool, str, list, dict, None]:
     """
-    Coerces a given value to basic types, including int, float, bool, and str.
+    Coerces a given value to basic types, including int, float, bool, and str, list, dict, and None.
 
     :param value: The value to be coerced.
     :type value: Any
@@ -226,33 +260,15 @@ def coerce_to_basic_types(value: Any) -> Union[int, float, bool, str, list, dict
     :return: The coerced value.
     :rtype: Union[int, float, bool, str, List, Dict, None]
     """
-
     if isinstance(value, (list, tuple)):
-        return [coerce_to_basic_types(item) for item in value]
+        return coerce_sequence(value)
     elif isinstance(value, dict):
-        return {k: coerce_to_basic_types(v) for k, v in value.items()}
+        return coerce_dict(value)
     elif hasattr(value, '__dict__'):
-        try:
-            return {k: coerce_to_basic_types(v) for k, v in value.__dict__.items()}
-        except:
-            pass
+        return coerce_object(value)
     elif isinstance(value, str):
-        normalized = value.strip().lower()
-        if normalized in ['true', 'false']:
-            return normalized == 'true'
-        elif normalized in ['none', 'null']:
-            return None
-    elif isinstance(value, bool):
+        return coerce_str(value)
+    elif isinstance(value, bool) or value is None:
         return value
-
-    try:
-        if float(value).is_integer():
-            return int(value)
-        else:
-            return float(value)
-    except:
-        try:
-            return str(value)
-        except:
-            pass
-    return None
+    else:
+        return coerce_num(value)

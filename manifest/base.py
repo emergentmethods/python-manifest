@@ -122,7 +122,7 @@ class Manifest(
         )
 
         # Parse any key_values provided
-        parsed_overrides = parse_key_values(key_values)
+        parsed_overrides = parse_key_values(key_values, coerce=True)
 
         # Merge everything together into a single material dictionary
         material = merge_dicts(parsed_files, parsed_env_vars, parsed_overrides, kwargs)
