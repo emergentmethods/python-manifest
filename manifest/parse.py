@@ -334,20 +334,22 @@ def parse_env_vars(
     )
 
 
-def parse_key_value(key_value: str) -> dict:
+def parse_key_value(key_value: str, coerce: bool = False) -> dict:
     """
     Parse a key-value pair in the format "a.b.c=value" and return a dictionary.
 
     :param key_value: A key-value pair in the format "key=value".
     :type key_value: str
+    :param coerce: Whether to coerce the value to a basic type. Defaults to False.
+    :type coerce: bool
     :return: A dictionary containing the parsed key-value pair.
     :rtype: dict[str, Any]
     """
     k, v = key_value.split("=")
-    return set_by_dot_path({}, k, coerce_to_basic_types(v))
+    return set_by_dot_path({}, k, v if not coerce else coerce_to_basic_types(v))
 
 
-def parse_key_values(key_values: list[str]) -> dict:
+def parse_key_values(key_values: list[str], coerce: bool = False) -> dict:
     """
     Parse a list of dot-delimited key value strings and return a nested dictionary.
 
@@ -357,6 +359,8 @@ def parse_key_values(key_values: list[str]) -> dict:
 
     :param key_values: A list of dot-delimited strings.
     :type key_values: List[str]
+    :param coerce: Whether to coerce the values to basic types. Defaults to False.
+    :type coerce: bool
     :returns: A nested dictionary containing the parsed key-value pairs.
     :rtype: dict
 
@@ -367,7 +371,7 @@ def parse_key_values(key_values: list[str]) -> dict:
     """
     return merge_dicts(
         *[
-            parse_key_value(key_value)
+            parse_key_value(key_value, coerce=coerce)
             for key_value in key_values
         ]
     )

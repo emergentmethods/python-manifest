@@ -156,6 +156,7 @@ def test_coerce_to_basic_types():
         "text",
         [1, 2, 3],
         {"a": 1, "b": 2},
+        None,
         CustomClass(),
     ]
 
@@ -166,9 +167,9 @@ def test_coerce_to_basic_types():
         "text",
         [1, 2, 3],
         {"a": 1, "b": 2},
+        None,
         {"a": 1, "b": "text", "c": {"x": 1, "y": 2}},
     ]
 
     coerced_data = coerce_to_basic_types(data)
-
     assert coerced_data == expected_result
