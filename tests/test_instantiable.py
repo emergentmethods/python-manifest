@@ -1,7 +1,6 @@
 import pytest
 from pydantic import BaseModel
 
-from manifest.utils import import_from_string
 from manifest.instantiable import instantiate_from_model, Instantiable
 from tests.mydummyobject import MyDummyObject
 

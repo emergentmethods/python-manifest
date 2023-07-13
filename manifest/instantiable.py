@@ -1,18 +1,20 @@
 from typing import Generic, TypeVar, Any
-from pydantic import Field, validator, BaseModel
-from pydantic.generics import GenericModel
+from pydantic import Field, validator, BaseModel, ConfigDict
 
 from manifest.utils import import_from_string
 
 T = TypeVar("T")
 
 
-class Instantiable(Generic[T], GenericModel, extra='allow', allow_population_by_field_name=True):
+class Instantiable(BaseModel, Generic[T]):
     """
     Instantiable is a generic model that can be used to instantiate objects from a model. It
     requires that the model specify a `target` attribute, which is used to import the class, and the
     model's fields are used as keyword arguments to the class constructor.
     """
+    model_config = ConfigDict(
+        {"extra": "allow", "arbitrary_types_allowed": True, "populate_by_name": True}
+    )
     target: str = Field(alias="__target__")
 
     @validator("target", pre=True)
@@ -37,7 +39,7 @@ def instantiate_from_model(model: BaseModel, extra: dict = {}, skip: bool = Fals
     :type skip: bool
     :return: The instantiated object.
     """
-    object_info = model.copy()
+    object_info = model.model_copy()
 
     if not hasattr(object_info, "target") or not object_info.target:
         if skip:
