@@ -1,7 +1,7 @@
 import os
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 from pathlib import Path
-from typing import TypeVar, Type, Any, Union, Mapping, AbstractSet, Callable, cast
+from typing import TypeVar, Type, Any, Callable, cast
 from dotenv import dotenv_values
 
 from manifest.parse import (
@@ -21,18 +21,17 @@ from manifest.utils import (
 
 T = TypeVar("T", bound="Manifest")
 
-class Manifest(
-    BaseModel,
-    arbitrary_types_allowed=True,
-    validate_assignment=True
-):
+class Manifest(BaseModel):
+    model_config = ConfigDict(
+        {"arbitrary_types_allowed": True, "validate_assignment": True, "extra": "allow"}
+    )
+
     def normalize(
         self,
         *,
-        include: Union[AbstractSet[int | str], Mapping[int | str, Any], None] = None,
-        exclude: Union[AbstractSet[int | str], Mapping[int | str, Any], None] = None,
+        include: set[str] | set[int] | dict[int, Any] | dict[str, Any] | None = None,
+        exclude: set[str] | set[int] | dict[int, Any] | dict[str, Any] | None = None,
         by_alias: bool = True,
-        skip_defaults: bool | None = None,
         exclude_unset: bool = False,
         exclude_defaults: bool = False,
         exclude_none: bool = False,
@@ -41,11 +40,10 @@ class Manifest(
         Return a dictionary representation of the Manifest
         with the values coerced to basic types.
         """
-        model_dict = super().dict(
+        model_dict = super().model_dump(
             include=include,
             exclude=exclude,
             by_alias=by_alias,
-            skip_defaults=skip_defaults,
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
             exclude_none=exclude_none,
@@ -55,11 +53,7 @@ class Manifest(
     @property
     def extra_fields(self) -> dict[str, Any]:
         # Get any extra fields that were set but not defined in the model
-        return {
-            k: v
-            for k, v in self.__dict__.items()
-            if k not in type(self).__fields__.keys()
-        }
+        return self.__pydantic_extra__ or {}
 
     @classmethod
     async def build(
@@ -259,7 +253,7 @@ class Manifest(
         :type value: Any
         :return: A copy of the Manifest with the given key set to the given value
         """
-        return self.copy(
+        return self.model_copy(
             update=set_by_dot_path(
                 self.normalize(),
                 key,

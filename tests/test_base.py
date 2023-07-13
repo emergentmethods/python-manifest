@@ -1,6 +1,7 @@
 import pytest
 import os
 
+from pydantic import RootModel
 from manifest.base import Manifest, BaseModel
 from manifest.parse import dump_to_file
 
@@ -233,14 +234,14 @@ async def test_manifest_get_by_key(test_config_files):
 async def test_alternate_root_manifest(test_config_files) -> None:
     file = "memory://alternate.json"
 
-    class MyManifest(Manifest):
-        __root__: list[int] = []
+    class MyManifest(Manifest, RootModel):
+        root: list[int] = []
 
     config = await MyManifest.from_files([file])
-    assert config.__root__ == [1, 2, 3]
+    assert config.root == [1, 2, 3]
 
-    config.__root__.append(4)
+    config.root.append(4)
     await config.to_file(file)
 
     config = await MyManifest.from_files([file])
-    assert config.__root__ == [1, 2, 3, 4]
+    assert config.root == [1, 2, 3, 4]
