@@ -1,5 +1,5 @@
 import os
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 from pathlib import Path
 from typing_extensions import deprecated
 from typing import TypeVar, Type, Any, Callable
@@ -23,10 +23,6 @@ T = TypeVar("T", bound="Manifest")
 
 
 class Manifest(BaseModel):
-    model_config = ConfigDict(
-        {"arbitrary_types_allowed": True, "validate_assignment": True, "extra": "allow"}
-    )
-
     @deprecated(
         "Manifest.normalize is deprecated, use Manifest.model_dump instead",
     )
