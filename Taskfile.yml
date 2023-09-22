@@ -1,5 +1,8 @@
 version: '3'
 
+vars:
+  PACKAGE_SRC_DIR: manifest
+
 tasks:
   # ---------------------
 
