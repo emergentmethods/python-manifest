@@ -48,7 +48,7 @@ def test_parse_key_values():
         (
             {
                 "APP__NAME": "MyApp",
-                "APP__VERSION": "1.0",
+                "APP__VERSION": "1.0.0",
                 "DB__HOST": "localhost",
                 "DB__PORT": "5432",
                 "API__ENABLED": "true",
@@ -57,13 +57,13 @@ def test_parse_key_values():
             "__",
             {
                 "name": "MyApp",
-                "version": "1.0",
+                "version": "1.0.0",
             }
         ),
         (
             {
                 "APP-NAME": "MyApp",
-                "APP-VERSION": "1.0",
+                "APP-VERSION": "1.0.0",
                 "DB-HOST": "localhost",
                 "DB-PORT": "5432",
                 "API-ENABLED": "true",
@@ -72,7 +72,7 @@ def test_parse_key_values():
             "-",
             {
                 "name": "MyApp",
-                "version": "1.0",
+                "version": "1.0.0",
             }
         ),
         (

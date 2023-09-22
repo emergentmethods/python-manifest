@@ -246,7 +246,7 @@ def coerce_num(value: Union[int, float, str]) -> Union[int, float, str]:
             return int(value)
         else:
             return float(value)
-    except ValueError:
+    except (ValueError, TypeError):
         return str(value)
 
 
