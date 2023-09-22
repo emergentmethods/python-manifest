@@ -330,7 +330,8 @@ def parse_env_vars(
             for key, val in env_vars.items()
             # Only parse environment variables that start with the prefix
             if key.startswith(prefix)
-        ]
+        ],
+        coerce=True
     )
 
 

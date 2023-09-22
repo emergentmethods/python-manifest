@@ -1,7 +1,8 @@
 import os
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel
 from pathlib import Path
-from typing import TypeVar, Type, Any, Callable, cast
+from typing_extensions import deprecated
+from typing import TypeVar, Type, Any, Callable
 from dotenv import dotenv_values
 
 from manifest.parse import (
@@ -11,7 +12,6 @@ from manifest.parse import (
     dump_to_file,
 )
 from manifest.utils import (
-    coerce_to_basic_types,
     merge_dicts_flat,
     merge_dicts,
     get_by_dot_path,
@@ -21,11 +21,11 @@ from manifest.utils import (
 
 T = TypeVar("T", bound="Manifest")
 
-class Manifest(BaseModel):
-    model_config = ConfigDict(
-        {"arbitrary_types_allowed": True, "validate_assignment": True, "extra": "allow"}
-    )
 
+class Manifest(BaseModel):
+    @deprecated(
+        "Manifest.normalize is deprecated, use Manifest.model_dump instead",
+    )
     def normalize(
         self,
         *,
@@ -39,16 +39,17 @@ class Manifest(BaseModel):
         """
         Return a dictionary representation of the Manifest
         with the values coerced to basic types.
+
+        **Deprecated**: Use `Manifest.model_dump` instead.
         """
-        model_dict = super().model_dump(
+        return self.model_dump(
             include=include,
             exclude=exclude,
             by_alias=by_alias,
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
-            exclude_none=exclude_none,
+            exclude_none=exclude_none
         )
-        return cast(dict, coerce_to_basic_types(model_dict))
 
     @property
     def extra_fields(self) -> dict[str, Any]:
@@ -117,10 +118,8 @@ class Manifest(BaseModel):
 
         # Parse any key_values provided
         parsed_overrides = parse_key_values(key_values, coerce=True)
-
         # Merge everything together into a single material dictionary
         material = merge_dicts(parsed_files, parsed_env_vars, parsed_overrides, kwargs)
-
         return cls(**material)
 
     @classmethod
@@ -240,7 +239,7 @@ class Manifest(BaseModel):
         :type kwargs: dict[str, Any]
         :return: The built Manifest
         """
-        parsed_key_values = parse_key_values(key_values)
+        parsed_key_values = parse_key_values(key_values, coerce=True)
         return cls(**{**parsed_key_values, **kwargs})
 
     def set_by_key(self, key: str, value: Any):
@@ -255,7 +254,7 @@ class Manifest(BaseModel):
         """
         return self.model_copy(
             update=set_by_dot_path(
-                self.normalize(),
+                self.model_dump(),
                 key,
                 value
             )
@@ -271,7 +270,7 @@ class Manifest(BaseModel):
         """
         return type(self)(
             **unset_by_dot_path(
-                self.normalize(),
+                self.model_dump(),
                 key
             )
         )
@@ -285,7 +284,7 @@ class Manifest(BaseModel):
         :return: The value of the key
         """
         return get_by_dot_path(
-            self.normalize(),
+            self.model_dump(),
             key
         )
 
@@ -310,7 +309,7 @@ class Manifest(BaseModel):
         """
         return await dump_to_file(
             file=file_path,
-            data=self.normalize(**kwargs),
+            data=self.model_dump(),
             pre_process_hooks=pre_process_hooks,
             post_process_hooks=post_process_hooks,
             **filesystem_options

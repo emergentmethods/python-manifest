@@ -1,13 +1,15 @@
 import pytest
 import os
-
+from typing import Optional, Union
 from pydantic import RootModel
+
 from manifest.base import Manifest, BaseModel
 from manifest.parse import dump_to_file
 
+
 class NestedModel(BaseModel):
     foo: bool = True
-    bar: dict = {}
+    bar: dict[str, Optional[Union[int, float]]] = {}
 
 
 class MyManifest(Manifest, extra='allow'):
@@ -63,17 +65,17 @@ async def test_manifest_build(test_config_files):
             }
         }
     }
-    assert config.normalize() == expected_model
+    assert config.model_dump() == expected_model
 
     # Test passing kwargs
     expected_model["x"] = 1
     config = await MyManifest.build(files, x=1)
-    assert config.normalize() == expected_model
+    assert config.model_dump() == expected_model
 
     # Test key_values
     expected_model["nested"]["foo"] = True
     config = await MyManifest.build(files, key_values=["nested.foo=True"], x=1)
-    assert config.normalize() == expected_model
+    assert config.model_dump() == expected_model
 
     # Test environment variable overrides
     expected_model["nested"]["bar"]["j"] = 0.1
@@ -83,7 +85,7 @@ async def test_manifest_build(test_config_files):
     os.environ["CONFIG__NESTED__BAR__K"] = "10"
     os.environ["CONFIG__NESTED__BAR__L"] = "None"
     config = await MyManifest.build(files, key_values=["nested.foo=True"], x=1)
-    assert config.normalize() == expected_model
+    assert config.model_dump() == expected_model
     del os.environ["CONFIG__NESTED__BAR__J"]
     del os.environ["CONFIG__NESTED__BAR__K"]
     del os.environ["CONFIG__NESTED__BAR__L"]
@@ -97,7 +99,7 @@ async def test_manifest_build(test_config_files):
         x=1,
     )
     expected_model["y"] = 1
-    assert config.normalize() == expected_model
+    assert config.model_dump() == expected_model
     assert config.extra_fields == {"y": 1}
 
 
@@ -118,7 +120,7 @@ async def test_manifest_from_files(test_config_files):
         }
     }
 
-    assert config.normalize() == expected_model
+    assert config.model_dump() == expected_model
 
 
 async def test_manifest_from_key_values(test_config_files):
@@ -135,7 +137,7 @@ async def test_manifest_from_key_values(test_config_files):
         }
     }
 
-    assert config.normalize() == expected_model
+    assert config.model_dump() == expected_model
 
 
 async def test_manifest_from_env(test_config_files):
@@ -153,10 +155,10 @@ async def test_manifest_from_env(test_config_files):
         "nested": {
             "foo": True,
             "bar": {}
-        }
+        },
     }
 
-    assert config.normalize() == expected_model
+    assert config.model_dump() == expected_model
 
 
 async def test_manifest_to_file(test_config_files):
