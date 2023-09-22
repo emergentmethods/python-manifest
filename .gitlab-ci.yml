@@ -32,6 +32,7 @@ default:
       - .cache/pypoetry
       - .cache/pip
       - .venv/
+      - ./task
     policy: pull-push
 
 
@@ -92,6 +93,8 @@ build-env:
     - pip install -U pip
     - pip install poetry
     - poetry install
+      # Install go-task
+    - sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b .
   rules:
       # If project dependencies were changed then run
     - changes:
@@ -140,7 +143,7 @@ lint-code:
   stage: lint
   script:
       # Ensure the code is formatted correctly
-    - make lint
+    - ./task lint
 
 
 unit-tests:
@@ -150,7 +153,7 @@ unit-tests:
     - gitlab-org-docker
   stage: test
   script:
-    - make test
+    - ./task test
   coverage: '/(?i)total.*? (100(?:\.0+)?\%|[1-9]?\d(?:\.\d+)?\%)$/'
   artifacts:
     reports:
@@ -168,29 +171,31 @@ bump-version:
   tags:
     - gitlab-org-docker
   variables:
-    REPO_URL: "https://${GIT_USER}:${GIT_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    REPO_URL: "https://release-token:${RELEASE_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
   stage: bump
   before_script:
       # Install semantic-release, not sure why it's not in the venv already
-    - pip install python-semantic-release
+    - pip install -U commitizen
       # Set git info
-    - git config --global user.email "$GIT_EMAIL"
-    - git config --global user.name "$GIT_USER"
+    - git config --global user.email "$GIT_COMMIT_EMAIL"
+    - git config --global user.name "$GIT_COMMIT_USER"
       # NOTE: Must be set to CLONE strategy in gitlab CI otherwise there will be
       # excess commits and tags from a dirty cache
     - git checkout $CI_COMMIT_BRANCH
     - git pull $REPO_URL $CI_COMMIT_BRANCH
       # Explicitly checkout branch since gitlab CI detaches
   script:
-    # Bump the version with prerelease tag
-    - export DID_BUMP=$(semantic-release version 2>&1)
+    # Bump the version
+    - export CZ_BUMP_OUTPUT=$(cz bump 2>&1)
+    - export CZ_BUMP_EXIT_CODE=$?
+    - echo $CZ_BUMP_OUTPUT
+    - echo $CZ_BUMP_EXIT_CODE
     # Push new tag to trigger release workflow if bumped
-    - echo $DID_BUMP
     - |
-      if [[ $DID_BUMP == *"No release will be made."* ]]; then
-        echo "Semantic release did not bump the version"
+      if [[ $CZ_BUMP_OUTPUT == *"[NO_COMMITS_TO_BUMP]"* ]]; then
+        echo "Version unchanged."
       else
-        echo "Semantic release bumped the version"
+        echo "Version changed."
         git push $REPO_URL $CI_COMMIT_BRANCH --tags
       fi
 
@@ -218,7 +223,7 @@ build-docs:
     - gitlab-org-docker
   stage: build
   script:
-    - make docs
+    - ./task docs
   artifacts:
     paths:
       - site/
@@ -284,22 +289,22 @@ publish-wheel:
       poetry publish
 
 
-deploy-docs:
-  <<: *only_tag
-  extends: .docker-job
-  stage: deploy
-  tags:
-    - em-manager1-runner
-  needs:
-    - job: get-version
-      artifacts: true
-    - job: build-docs-docker
-  script:
-    - docker login -u "$CI_DEPLOY_USER" -p "$CI_DEPLOY_TOKEN" $CI_REGISTRY
-    - docker stack deploy -c $DOCS_STACK --prune --with-registry-auth $STACK_NAME
-  environment:
-    name: documentation
-    url: https://docs.emergentmethods.ai/manifest/
-  variables:
-    DEPLOY_HOST: docs.emergentmethods.ai
-    STACK_NAME: manifest-docs
+# deploy-docs:
+#   <<: *only_tag
+#   extends: .docker-job
+#   stage: deploy
+#   tags:
+#     - em-manager1-runner
+#   needs:
+#     - job: get-version
+#       artifacts: true
+#     - job: build-docs-docker
+#   script:
+#     - docker login -u "$CI_DEPLOY_USER" -p "$CI_DEPLOY_TOKEN" $CI_REGISTRY
+#     - docker stack deploy -c $DOCS_STACK --prune --with-registry-auth $STACK_NAME
+#   environment:
+#     name: documentation
+#     url: https://docs.emergentmethods.ai/manifest/
+#   variables:
+#     DEPLOY_HOST: docs.emergentmethods.ai
+#     STACK_NAME: manifest-docs

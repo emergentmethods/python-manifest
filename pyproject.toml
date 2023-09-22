@@ -30,7 +30,6 @@ mkdocs = "^1.4.3"
 mkdocs-material = "^9.1.15"
 mkdocstrings = {version = "^0.22.0", extras = ["python"]}
 coverage = "^7.2.7"
-python-semantic-release = "^7.34.3"
 types-toml = "^0.10.8.6"
 pre-commit = "^3.3.2"
 
@@ -60,11 +59,10 @@ ignore_errors = "true"
 [tool.coverage.xml]
 output = "coverage.xml"
 
-[tool.semantic_release]
-version_toml = "pyproject.toml:tool.poetry.version"
-commit_author = "Timothy Pogue <tim@emergentmethods.ai>"
-commit_subject = "chore(release): Release {version}"
-commit_message = ""
-upload_to_repository = false
-upload_to_pypi = false
-tag_format = "{version}"
+[tool.commitizen]
+name = "cz_conventional_commits"
+tag_format = "$version"
+version_scheme = "semver"
+version_provider = "poetry"
+update_changelog_on_bump = true
+bump_message = "chore(release): Release $new_version"

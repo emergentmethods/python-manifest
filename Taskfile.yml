@@ -1,0 +1,22 @@
+version: '3'
+
+tasks:
+  # ---------------------
+
+  # Linting
+  lint:
+    cmds:
+      - flake8 {{.PACKAGE_SRC_DIR}}
+
+  # Run unit tests
+  test:
+    cmds:
+      - coverage run -m pytest --junitxml=report.xml
+      - coverage report
+      - coverage xml
+      - coverage html -d coverage-report
+
+  # Build the documentation
+  docs:
+    cmds:
+      - mkdocs build
