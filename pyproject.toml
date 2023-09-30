@@ -15,7 +15,7 @@ repository = "https://github.com/emergentmethods/python-manifest"
 python = "^3.10"
 pyyaml = "^6.0"
 python-rapidjson = "^1.10"
-pydantic = "^2.3.0"
+pydantic = ">=1.8,<3.0"
 python-dotenv = "^1.0.0"
 fsspec = "^2023.5.0"
 toml = "^0.10.2"
@@ -52,6 +52,9 @@ log_auto_indent = "False"
 
 [tool.coverage.run]
 source = ["manifest"]
+omit = [
+    "manifest/pydantic.py",
+]
 
 [tool.coverage.report]
 ignore_errors = "true"

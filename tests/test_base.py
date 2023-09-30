@@ -1,7 +1,6 @@
 import pytest
 import os
 from typing import Optional, Union
-from pydantic import RootModel
 
 from manifest.base import Manifest, BaseModel
 from manifest.parse import dump_to_file
@@ -9,7 +8,7 @@ from manifest.parse import dump_to_file
 
 class NestedModel(BaseModel):
     foo: bool = True
-    bar: dict[str, Optional[Union[int, float]]] = {}
+    bar: dict[str, Optional[Union[float, int]]] = {}
 
 
 class MyManifest(Manifest, extra='allow'):
@@ -65,17 +64,17 @@ async def test_manifest_build(test_config_files):
             }
         }
     }
-    assert config.model_dump() == expected_model
+    assert config.normalize() == expected_model
 
     # Test passing kwargs
     expected_model["x"] = 1
     config = await MyManifest.build(files, x=1)
-    assert config.model_dump() == expected_model
+    assert config.normalize() == expected_model
 
     # Test key_values
     expected_model["nested"]["foo"] = True
     config = await MyManifest.build(files, key_values=["nested.foo=True"], x=1)
-    assert config.model_dump() == expected_model
+    assert config.normalize() == expected_model
 
     # Test environment variable overrides
     expected_model["nested"]["bar"]["j"] = 0.1
@@ -85,7 +84,7 @@ async def test_manifest_build(test_config_files):
     os.environ["CONFIG__NESTED__BAR__K"] = "10"
     os.environ["CONFIG__NESTED__BAR__L"] = "None"
     config = await MyManifest.build(files, key_values=["nested.foo=True"], x=1)
-    assert config.model_dump() == expected_model
+    assert config.normalize() == expected_model
     del os.environ["CONFIG__NESTED__BAR__J"]
     del os.environ["CONFIG__NESTED__BAR__K"]
     del os.environ["CONFIG__NESTED__BAR__L"]
@@ -99,7 +98,7 @@ async def test_manifest_build(test_config_files):
         x=1,
     )
     expected_model["y"] = 1
-    assert config.model_dump() == expected_model
+    assert config.normalize() == expected_model
     assert config.extra_fields == {"y": 1}
 
 
@@ -120,7 +119,7 @@ async def test_manifest_from_files(test_config_files):
         }
     }
 
-    assert config.model_dump() == expected_model
+    assert config.normalize() == expected_model
 
 
 async def test_manifest_from_key_values(test_config_files):
@@ -137,7 +136,7 @@ async def test_manifest_from_key_values(test_config_files):
         }
     }
 
-    assert config.model_dump() == expected_model
+    assert config.normalize() == expected_model
 
 
 async def test_manifest_from_env(test_config_files):
@@ -158,7 +157,7 @@ async def test_manifest_from_env(test_config_files):
         },
     }
 
-    assert config.model_dump() == expected_model
+    assert config.normalize() == expected_model
 
 
 async def test_manifest_to_file(test_config_files):
@@ -233,17 +232,33 @@ async def test_manifest_get_by_key(test_config_files):
     assert config.get_by_key("nested.foo") == True
 
 
+# Fix: RootModels must be manually defined in the Manifest object for
+# now until we drop support for pydantic v1
 async def test_alternate_root_manifest(test_config_files) -> None:
+    from manifest.pydantic import IS_V1
+
     file = "memory://alternate.json"
 
-    class MyManifest(Manifest, RootModel):
-        root: list[int] = []
+    if IS_V1:
+        class MyManifest(Manifest):
+            __root__: list[int] = []
 
-    config = await MyManifest.from_files([file])
-    assert config.root == [1, 2, 3]
+        root_alias = "__root__"
+    else:
+        from pydantic import RootModel
 
-    config.root.append(4)
-    await config.to_file(file)
+        class MyManifest(Manifest, RootModel):
+            root: list[int] = []
 
-    config = await MyManifest.from_files([file])
-    assert config.root == [1, 2, 3, 4]
+        root_alias = "root"
+    
+    get_root = lambda m: getattr(m, root_alias)
+
+    config = await MyManifest.from_files([file], root_alias=root_alias)
+    assert get_root(config) == [1, 2, 3]
+
+    get_root(config).append(4)
+    await config.to_file(file, root_alias=root_alias)
+
+    config = await MyManifest.from_files([file], root_alias=root_alias)
+    assert get_root(config) == [1, 2, 3, 4]

@@ -1,20 +1,37 @@
-from typing import Generic, TypeVar, Any
-from pydantic import Field, validator, BaseModel, ConfigDict
+from typing import TypeVar, Any, Generic
 
+from manifest.pydantic import (
+    BaseModel,
+    Field,
+    validator,
+    model_copy,
+    get_set_fields,
+    get_fields,
+    ConfigDict,
+    GenericModel,
+    IS_V1,
+)
 from manifest.utils import import_from_string
 
 T = TypeVar("T")
 
 
-class Instantiable(BaseModel, Generic[T]):
+class Instantiable(GenericModel, Generic[T]):
     """
     Instantiable is a generic model that can be used to instantiate objects from a model. It
     requires that the model specify a `target` attribute, which is used to import the class, and the
     model's fields are used as keyword arguments to the class constructor.
     """
-    model_config = ConfigDict(
-        {"extra": "allow", "arbitrary_types_allowed": True, "populate_by_name": True}
-    )
+    if IS_V1:  # pragma: no cover
+        class Config:
+            extra = "allow"
+            arbitrary_types_allowed = True
+            allow_population_by_field_name = True
+    else:
+        model_config = ConfigDict(
+            {"extra": "allow", "arbitrary_types_allowed": True, "populate_by_name": True}
+        )
+
     target: str = Field(alias="__target__")
 
     @validator("target", pre=True)
@@ -39,7 +56,7 @@ def instantiate_from_model(model: BaseModel, extra: dict = {}, skip: bool = Fals
     :type skip: bool
     :return: The instantiated object.
     """
-    object_info = model.model_copy()
+    object_info = model_copy(model)
 
     if not hasattr(object_info, "target") or not object_info.target:
         if skip:
@@ -48,11 +65,9 @@ def instantiate_from_model(model: BaseModel, extra: dict = {}, skip: bool = Fals
 
     target = import_from_string(object_info.target)
 
-    fields = object_info.__fields__
-    field_names = set(fields.keys())
-    extra_fields = object_info.__fields_set__ - field_names
-    fields_to_copy = (extra_fields ^ field_names) - {"target"}
-
+    field_names = set(get_fields(object_info).keys())
+    set_fields = get_set_fields(object_info)
+    fields_to_copy = (set_fields | field_names) - {"target"}
     kwargs = {}
 
     for field in fields_to_copy:

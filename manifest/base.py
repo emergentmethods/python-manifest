@@ -1,10 +1,14 @@
 import os
-from pydantic import BaseModel
 from pathlib import Path
-from typing_extensions import deprecated
 from typing import TypeVar, Type, Any, Callable
 from dotenv import dotenv_values
 
+from manifest.pydantic import (
+    BaseModel,
+    model_dump,
+    model_copy,
+    get_model_extras,
+)
 from manifest.parse import (
     parse_files,
     parse_key_values,
@@ -23,9 +27,6 @@ T = TypeVar("T", bound="Manifest")
 
 
 class Manifest(BaseModel):
-    @deprecated(
-        "Manifest.normalize is deprecated, use Manifest.model_dump instead",
-    )
     def normalize(
         self,
         *,
@@ -40,21 +41,33 @@ class Manifest(BaseModel):
         Return a dictionary representation of the Manifest
         with the values coerced to basic types.
 
-        **Deprecated**: Use `Manifest.model_dump` instead.
+        :param include: A set of fields to include
+        :type include: set[str] | set[int] | dict[int, Any] | dict[str, Any] | None
+        :param exclude: A set of fields to exclude
+        :type exclude: set[str] | set[int] | dict[int, Any] | dict[str, Any] | None
+        :param by_alias: Whether to use the alias names or not
+        :type by_alias: bool
+        :param exclude_unset: Whether to exclude unset values or not
+        :type exclude_unset: bool
+        :param exclude_defaults: Whether to exclude default values or not
+        :type exclude_defaults: bool
+        :param exclude_none: Whether to exclude None values or not
+        :type exclude_none: bool
         """
-        return self.model_dump(
+        return model_dump(
+            self,
             include=include,
             exclude=exclude,
             by_alias=by_alias,
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
-            exclude_none=exclude_none
+            exclude_none=exclude_none,
         )
 
     @property
     def extra_fields(self) -> dict[str, Any]:
         # Get any extra fields that were set but not defined in the model
-        return self.__pydantic_extra__ or {}
+        return get_model_extras(self)
 
     @classmethod
     async def build(
@@ -128,6 +141,7 @@ class Manifest(BaseModel):
         files: list[str | Path],
         pre_process_hooks: list[Callable] = [],
         post_process_hooks: list[Callable] = [],
+        root_alias: str = "root",
         filesystem_options: dict = {},
         **kwargs
     ) -> T:
@@ -148,6 +162,7 @@ class Manifest(BaseModel):
             files=files,
             pre_process_hooks=pre_process_hooks,
             post_process_hooks=post_process_hooks,
+            root_alias=root_alias,
             **filesystem_options
         )
 
@@ -159,6 +174,7 @@ class Manifest(BaseModel):
         file_path: str | Path,
         pre_process_hooks: list[Callable] = [],
         post_process_hooks: list[Callable] = [],
+        root_alias: str = "root",
         filesystem_options: dict = {},
         **kwargs
     ) -> T:
@@ -180,6 +196,7 @@ class Manifest(BaseModel):
             pre_process_hooks=pre_process_hooks,
             post_process_hooks=post_process_hooks,
             filesystem_options=filesystem_options,
+            root_alias=root_alias,
             **kwargs
         )
 
@@ -252,13 +269,7 @@ class Manifest(BaseModel):
         :type value: Any
         :return: A copy of the Manifest with the given key set to the given value
         """
-        return self.model_copy(
-            update=set_by_dot_path(
-                self.model_dump(),
-                key,
-                value
-            )
-        )
+        return model_copy(self, update=set_by_dot_path(self.normalize(), key, value))
 
     def unset_by_key(self, key: str):
         """
@@ -268,12 +279,7 @@ class Manifest(BaseModel):
         :type key: str
         :return: A copy of the Manifest with the given key unset
         """
-        return type(self)(
-            **unset_by_dot_path(
-                self.model_dump(),
-                key
-            )
-        )
+        return type(self)(**unset_by_dot_path(self.normalize(), key))
 
     def get_by_key(self, key: str):
         """
@@ -283,16 +289,14 @@ class Manifest(BaseModel):
         :type key: str
         :return: The value of the key
         """
-        return get_by_dot_path(
-            self.model_dump(),
-            key
-        )
+        return get_by_dot_path(self.normalize(), key)
 
     async def to_file(
         self,
         file_path: str | Path,
         pre_process_hooks: list[Callable] = [],
         post_process_hooks: list[Callable] = [],
+        root_alias: str = "root",
         filesystem_options: dict = {},
         **kwargs
     ) -> int:
@@ -305,12 +309,16 @@ class Manifest(BaseModel):
         :type pre_process_hooks: list[Callable]
         :param post_process_hooks: A list of post-process hooks to run after serialization
         :type post_process_hooks: list[Callable]
+        :param root_alias: The alias to use for the root model, defaults to "root"
+        :type root_alias: str
+        :param filesystem_options: Additional keyword arguments to pass to the filesystem
         :return: The number of bytes written to the file
         """
         return await dump_to_file(
             file=file_path,
-            data=self.model_dump(),
+            data=self.normalize(),
             pre_process_hooks=pre_process_hooks,
             post_process_hooks=post_process_hooks,
+            root_alias=root_alias,
             **filesystem_options
         )
