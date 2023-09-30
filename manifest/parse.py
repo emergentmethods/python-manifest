@@ -138,7 +138,7 @@ async def dump_to_file(
     pre_process_hooks: list[Callable] = [],
     post_process_hooks: list[Callable] = [],
     default_serializer: Any = Undefined,
-    root_alias: str = "__root__",
+    root_alias: str = "root",
     **kwargs
 ) -> int:
     """
