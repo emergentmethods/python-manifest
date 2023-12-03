@@ -14,4 +14,4 @@ class YAMLSerializer(Serializer):
 
     @staticmethod
     def dumps(data: Any) -> bytes:
-        return yaml.dump(data).encode()
+        return yaml.dump(data, sort_keys=False).encode()
