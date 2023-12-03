@@ -182,12 +182,12 @@ async def test_manifest_to_file(test_config_files):
     assert (await read_from_file("memory://test.json")) == actual_result_json
     # Test YAML
     assert (await config.to_file("memory://test.yml")) > 0
-    actual_result_yaml = b"""database: someotherplace
+    actual_result_yaml = b"""x: 10
+database: someotherplace
 nested:
+  foo: true
   bar:
     l: null
-  foo: true
-x: 10
 """
     assert (await read_from_file("memory://test.yml")) == actual_result_yaml
 
