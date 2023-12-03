@@ -1,3 +1,9 @@
+## 2.2.1 (2023-12-03)
+
+### Fix
+
+- Ensure keys are not sorted in yaml serializer
+
 ## 2.2.0 (2023-09-30)
 
 ### Feat
