@@ -1,9 +1,3 @@
-## 2.2.2 (2024-01-08)
-
-### Fix
-
-- Fix small bug in model_dump method for pydantic v2
-
 ## 2.2.1 (2023-12-03)
 
 ### Fix
