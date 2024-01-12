@@ -1,3 +1,9 @@
+## 2.2.3 (2024-01-12)
+
+### Fix
+
+- Disable serialization warnings by default in pydantic model_dump
+
 ## 2.2.2 (2024-01-08)
 
 ### Fix
