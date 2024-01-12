@@ -33,6 +33,7 @@ def model_dump(
     exclude_unset: bool = False,
     exclude_defaults: bool = False,
     exclude_none: bool = False,
+    warnings: bool = False,
 ) -> Any:
     if IS_V1:
         return model.dict(
@@ -52,6 +53,7 @@ def model_dump(
             exclude_unset=exclude_unset,
             exclude_defaults=exclude_defaults,
             exclude_none=exclude_none,
+            warnings=warnings
         )
 
 
