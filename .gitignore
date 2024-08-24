@@ -118,4 +118,4 @@ dmypy.json
 
 *.code-workspace
 
-_test*.py
+_test*.*

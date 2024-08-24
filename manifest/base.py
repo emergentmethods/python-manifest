@@ -1,27 +1,29 @@
 import os
 from pathlib import Path
-from typing import TypeVar, Type, Any, Callable
+from typing import Any, Callable, Type, TypeVar
+
 from dotenv import dotenv_values
 
-from manifest.pydantic import (
-    BaseModel,
-    model_dump,
-    model_copy,
-    get_model_extras,
-)
 from manifest.parse import (
+    dump_to_file,
+    parse_env_vars,
     parse_files,
     parse_key_values,
-    parse_env_vars,
-    dump_to_file,
+)
+from manifest.pydantic import (
+    BaseModel,
+    get_model_extras,
+    model_copy,
+    model_dump,
 )
 from manifest.utils import (
-    merge_dicts_flat,
-    merge_dicts,
     get_by_dot_path,
+    merge_dicts,
+    merge_dicts_flat,
     set_by_dot_path,
-    unset_by_dot_path
+    unset_by_dot_path,
 )
+
 
 T = TypeVar("T", bound="Manifest")
 
@@ -72,15 +74,15 @@ class Manifest(BaseModel):
     @classmethod
     async def build(
         cls: Type[T],
-        files: list[str | Path] = [],
-        dotenv_files: list[str] = [],
-        key_values: list[str] = [],
+        files: list[str | Path] | None = None,
+        dotenv_files: list[str] | None = None,
+        key_values: list[str] | None = None,
         env_prefix: str = "CONFIG",
         env_delimiter: str = "__",
-        pre_process_hooks: list[Callable] = [],
-        post_process_hooks: list[Callable] = [],
-        filesystem_options: dict[str, Any] = {},
-        **kwargs
+        pre_process_hooks: list[Callable] | None = None,
+        post_process_hooks: list[Callable] | None = None,
+        filesystem_options: dict[str, Any] | None = None,
+        **kwargs,
     ) -> T:
         """
         Build the Manifest from a variety of sources.
@@ -106,31 +108,28 @@ class Manifest(BaseModel):
         # Get the environment variables from any dotenv files if
         # provided and os.environ and merge to a flat dict
         env_vars = merge_dicts_flat(
-            *[
-                dotenv_values(dotenv_file)
-                for dotenv_file in dotenv_files
-            ] + [
-                dict(os.environ)
-            ]
+            *[dotenv_values(dotenv_file) for dotenv_file in dotenv_files or []] + [dict(os.environ)]
         )
 
         # Parse the files if they are provided
-        parsed_files = await parse_files(
-            files=files,
-            pre_process_hooks=pre_process_hooks,
-            post_process_hooks=post_process_hooks,
-            **filesystem_options
-        ) if files else {}
+        parsed_files = (
+            await parse_files(
+                files=files or [],
+                pre_process_hooks=pre_process_hooks,
+                post_process_hooks=post_process_hooks,
+                **(filesystem_options or {}),
+            )
+            if files
+            else {}
+        )
 
         # Parse the env vars for the final dictionary representation
         parsed_env_vars = parse_env_vars(
-            env_vars=env_vars,
-            prefix=env_prefix,
-            delimiter=env_delimiter
+            env_vars=env_vars, prefix=env_prefix, delimiter=env_delimiter
         )
 
         # Parse any key_values provided
-        parsed_overrides = parse_key_values(key_values, coerce=True)
+        parsed_overrides = parse_key_values(key_values or [], coerce=True)
         # Merge everything together into a single material dictionary
         material = merge_dicts(parsed_files, parsed_env_vars, parsed_overrides, kwargs)
         return cls(**material)
@@ -139,11 +138,11 @@ class Manifest(BaseModel):
     async def from_files(
         cls: Type[T],
         files: list[str | Path],
-        pre_process_hooks: list[Callable] = [],
-        post_process_hooks: list[Callable] = [],
+        pre_process_hooks: list[Callable] | None = None,
+        post_process_hooks: list[Callable] | None = None,
         root_alias: str = "root",
-        filesystem_options: dict = {},
-        **kwargs
+        filesystem_options: dict | None = None,
+        **kwargs,
     ) -> T:
         """
         Build the Manifest from a list of files.
@@ -163,7 +162,7 @@ class Manifest(BaseModel):
             pre_process_hooks=pre_process_hooks,
             post_process_hooks=post_process_hooks,
             root_alias=root_alias,
-            **filesystem_options
+            **(filesystem_options or {}),
         )
 
         return cls(**{**parsed_files, **kwargs})
@@ -172,11 +171,11 @@ class Manifest(BaseModel):
     async def from_file(
         cls: Type[T],
         file_path: str | Path,
-        pre_process_hooks: list[Callable] = [],
-        post_process_hooks: list[Callable] = [],
+        pre_process_hooks: list[Callable] | None = None,
+        post_process_hooks: list[Callable] | None = None,
         root_alias: str = "root",
-        filesystem_options: dict = {},
-        **kwargs
+        filesystem_options: dict | None = None,
+        **kwargs,
     ) -> T:
         """
         Build the Manifest from a file.
@@ -197,16 +196,16 @@ class Manifest(BaseModel):
             post_process_hooks=post_process_hooks,
             filesystem_options=filesystem_options,
             root_alias=root_alias,
-            **kwargs
+            **kwargs,
         )
 
     @classmethod
     async def from_env(
         cls: Type[T],
-        dotenv_files: list[str] = [],
+        dotenv_files: list[str] | None = None,
         env_prefix: str = "CONFIG",
         env_delimiter: str = "__",
-        **kwargs
+        **kwargs,
     ) -> T:
         """
         Get the Manifest from environment variables.
@@ -224,29 +223,18 @@ class Manifest(BaseModel):
         # Get the environment variables from any dotenv files if
         # provided and os.environ and merge to a flat dict
         env_vars = merge_dicts_flat(
-            *[
-                dotenv_values(dotenv_file)
-                for dotenv_file in dotenv_files
-            ] + [
-                dict(os.environ)
-            ]
+            *[dotenv_values(dotenv_file) for dotenv_file in dotenv_files or []] + [dict(os.environ)]
         )
 
         # Parse the env vars for the final dictionary representation
         parsed_env_vars = parse_env_vars(
-            env_vars=env_vars,
-            prefix=env_prefix,
-            delimiter=env_delimiter
+            env_vars=env_vars, prefix=env_prefix, delimiter=env_delimiter
         )
 
         return cls(**{**parsed_env_vars, **kwargs})
 
     @classmethod
-    async def from_key_values(
-        cls: Type[T],
-        key_values: list[str],
-        **kwargs
-    ) -> T:
+    async def from_key_values(cls: Type[T], key_values: list[str], **kwargs) -> T:
         """
         Build the Manifest from a list of key-value pairs.
 
@@ -294,11 +282,11 @@ class Manifest(BaseModel):
     async def to_file(
         self,
         file_path: str | Path,
-        pre_process_hooks: list[Callable] = [],
-        post_process_hooks: list[Callable] = [],
+        pre_process_hooks: list[Callable] | None = None,
+        post_process_hooks: list[Callable] | None = None,
         root_alias: str = "root",
-        filesystem_options: dict = {},
-        **kwargs
+        filesystem_options: dict | None = None,
+        **kwargs,
     ) -> int:
         """
         Save the Manifest to a file.
@@ -320,5 +308,6 @@ class Manifest(BaseModel):
             pre_process_hooks=pre_process_hooks,
             post_process_hooks=post_process_hooks,
             root_alias=root_alias,
-            **filesystem_options
+            **(filesystem_options or {}),
+            **kwargs,
         )

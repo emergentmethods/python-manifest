@@ -4,6 +4,10 @@ from typing import Any
 from manifest.hooks.expressions.operations import execute_operation
 
 
+EXPRESSION_REGEX = re.compile(r"\$(?P<operation>\w+)\{(?P<args>.*)\}")
+EXPRESSION_LOC_REGEX = re.compile(r"\$(\w+)\{([^{}]*)\}")
+
+
 def parse_expression(expression: str) -> dict | None:
     """
     Parses an expression string and returns the matched objects,
@@ -17,57 +21,88 @@ def parse_expression(expression: str) -> dict | None:
     :returns: The matched objects, or None if the string is not an expression.
     :rtype: dict or None
     """
-    if not isinstance(expression, (str, bytes)):
-        return None
-
-    match = re.match(
-        pattern=r"\$(?P<operation>\w+)\{(?P<args>.*)\}",
-        string=expression
-    )
-
-    if not match:
-        return None
-
-    return match.groupdict()
+    match = re.match(pattern=EXPRESSION_REGEX, string=expression)
+    return match.groupdict() if match else None
 
 
-async def resolve_expression(expression: str, context: dict) -> Any:
+async def resolve_expression(expression: str, context: Any) -> Any:
     """
-    Resolve a single expression and return the resolved value.
+    Resolve expressions within a string and return the resolved value.
 
-    This function takes an expression string in the format "$operation_name{arg}" and
-    a context, and returns the resolved value.
+    This function takes a string that may contain expressions in the format "$operation_name{arg}"
+    and a context, and returns the string with all expressions resolved.
 
     Example:
 
-        >>> resolve_expression("$reverse{hello}", {})
-        "olleh"
+        >>> await resolve_expression("some text with $reverse{hello}", {})
+        "some text with olleh"
 
-    :param expression: The expression string to be resolved.
+    :param expression: The string that may contain expressions to be resolved.
     :type expression: str
-    :param context: The context to resolve the expression in.
+    :param context: The context to resolve the expressions in.
     :type context: dict
-    :returns: The resolved value.
+    :returns: The string with all expressions resolved.
     :rtype: Any
-    :raises ValueError: If the expression string is invalid or unknown.
+    :raises ValueError: If an expression string is invalid or unknown.
     """
-    # Parse the expression string
-    parsed = parse_expression(expression)
-
-    if not parsed:
+    if not isinstance(expression, str):
         return expression
 
-    # Get the expression information
-    op = parsed["operation"]
-    args = parsed["args"].split(",")
+    async def _resolve(expr: str) -> str:
+        # Parse the expression string
+        parsed = parse_expression(expr)
 
-    # Ensure nested directives in args are resolved
-    args = [await resolve_expression(arg, context) for arg in args]
+        if not parsed:
+            return expr
 
-    return await execute_operation(op, args, context)
+        # Get the expression information
+        op = parsed["operation"]
+        args = parsed["args"].split(",")
+
+        # Ensure nested directives in args are resolved
+        return await execute_operation(
+            op, [await resolve_expression(arg, context) for arg in args], context
+        )
+
+    while True:
+        matches = list(re.finditer(EXPRESSION_LOC_REGEX, expression))
+        if not matches:
+            break
+
+        for match in reversed(matches):
+            start, end = match.span()
+            resolved_value = await _resolve(match.group(0))
+
+            if expression == match.group(0):
+                # If the entire expression is the match, return the resolved value directly
+                return resolved_value
+            else:
+                # Otherwise, concatenate the resolved value as a string
+                expression = expression[:start] + str(resolved_value) + expression[end:]
+
+    return expression
+
+    # matches = re.finditer(EXPRESSION_LOC_REGEX, expression)
+    # result = expression
+    # offset = 0
+
+    # for match in matches:
+    #     start, end = match.span()
+    #     resolved_value = await _resolve(match.group(0))
+
+    #     if expression == match.group(0):
+    #         # If the entire expression is the match, return the resolved value directly
+    #         return resolved_value
+    #     else:
+    #         # Otherwise, concatenate the resolved value as a string
+    #         resolved_value = str(resolved_value)
+    #         result = result[:start + offset] + resolved_value + result[end + offset:]
+    #         offset += len(resolved_value) - (end - start)
+
+    # return result
 
 
-async def resolve_expressions(data: dict, parent: dict | None = None):
+async def resolve_expressions(data: dict | list | Any, parent: Any | None = None):
     """
     Recursively resolves expressions in a dictionary and returns a new dictionary
     with the resolved values.
@@ -82,18 +117,11 @@ async def resolve_expressions(data: dict, parent: dict | None = None):
     if not parent:
         parent = data
 
-    for key, value in data.items():
-        if isinstance(value, dict):
-            # If the value is a dictionary, recursively call resolve_expressions
-            # on the value and assign the result to the corresponding key in
-            # the result dictionary
-            data[key] = await resolve_expressions(value, parent)
-        elif isinstance(value, list):
-            # If the value is a list, iterate over each item and resolve the
-            # expression
-            data[key] = [await resolve_expression(k, parent) for k in value]
-        else:
-            # Otherwise, call resolve_expression on the value and assign the
-            # resolved value to the corresponding key in the result dictionary
-            data[key] = await resolve_expression(value, parent)
+    if isinstance(data, dict):
+        return {key: await resolve_expressions(value, parent) for key, value in data.items()}
+    elif isinstance(data, list):
+        return [await resolve_expressions(item, parent) for item in data]
+    else:
+        return await resolve_expression(data, parent)
+
     return data
