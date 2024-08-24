@@ -1,0 +1,33 @@
+include:
+  - local: '.gitlab/templates.yml'
+
+image: python:3.12
+
+stages: !reference [.stages, stages]
+
+bump_version:
+  stage: bump
+  variables:
+    REPO_URL: "https://release-token:${RELEASE_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git"
+    LANGUAGE_VERSION_FILE: "pyproject.toml"
+    LANGUAGE: "python"
+  before_script:
+      # Add global before_script commands since they are overwritten here
+    - export PATH=$PATH:$(pwd)
+      # Set git info
+    - git config --global user.email "$GIT_COMMIT_EMAIL"
+    - git config --global user.name "$GIT_COMMIT_USER"
+      # NOTE: Must be set to CLONE strategy in gitlab CI otherwise there will be
+      # excess commits and tags from a dirty cache
+    - git checkout $CI_COMMIT_BRANCH
+    - git pull $REPO_URL $CI_COMMIT_BRANCH
+      # Explicitly checkout branch since gitlab CI detaches
+  script:
+    # Push new tag to trigger release workflow if bumped
+    - |
+      if ! task bump-version VERSION_FILE=$LANGUAGE_VERSION_FILE LANGUAGE=$LANGUAGE CI=true; then
+        echo "Version unchanged."
+      else
+        echo "Version changed."
+        git push $REPO_URL $CI_COMMIT_BRANCH --tags
+      fi

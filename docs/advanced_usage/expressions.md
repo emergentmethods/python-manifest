@@ -16,7 +16,8 @@ Manifest provides a variety of built-in operations that can be used with express
 | `reverse` 	| Reverse a string              	| `$reverse{hello}` 	|
 | `upper`   	| Convert a string to uppercase 	| `$upper{hello}`   	|
 | `lower`   	| Convert a string to lowercase 	| `$lower{HELLO}`   	|
-| `ref`     	| Get a value from the context  	| `$ref{key}` or `$ref{path|key}`  	|
+| `ref`     	| Get a value from the context  	| `$ref{key}` or `$ref{path\|key}`  	|
+| `env`     	| Get a value from the environment 	| `$env{key}`  	|
 | `sum`     	| Sum a list of numbers         	| `$sum{1,2,3}`     	|
 
 

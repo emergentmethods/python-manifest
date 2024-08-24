@@ -12,6 +12,7 @@ from manifest.utils import (
     merge_dicts,
     get_filename_suffix,
     coerce_to_basic_types,
+    Sentinel,
 )
 
 
@@ -38,11 +39,41 @@ def test_get_by_dot_path():
 
 
 def test_set_by_dot_path():
-    data = {"a": {"b": {"c": 3}}}
+    assert set_by_dot_path(
+        {"a": {"b": {"c": 3}}},
+        "a.b.c",
+        4
+    ) == {"a": {"b": {"c": 4}}}
 
-    assert set_by_dot_path(data, "a.b.c", 4) == {"a": {"b": {"c": 4}}}
-    assert set_by_dot_path(data, "a.b.d", 5) == {"a": {"b": {"c": 4, "d": 5}}}
-    assert set_by_dot_path(data, "a.e.f", 6) == {"a": {"b": {"c": 4, "d": 5}, "e": {"f": 6}}}
+    assert set_by_dot_path(
+        {"a": {"b": {"c": 3}}},
+        "a.b.d",
+        5
+    ) == {"a": {"b": {"c": 3, "d": 5}}}
+
+    assert set_by_dot_path(
+        {"a": {"b": {"c": 3}}},
+        "a.e.f",
+        6
+    ) == {"a": {"b": {"c": 3}, "e": {"f": 6}}}
+
+    assert set_by_dot_path(
+        {"a": {"b": {"c": 3, "d": [1, 2, 3]}}},
+        "a.b.d[0]",
+        7
+    ) == {"a": {"b": {"c": 3, "d": [7, 2, 3]}}}
+
+    assert set_by_dot_path(
+        {"a": {"b": {"c": 3, "d": [1, 2, 3]}}},
+        "a.b.d[4]",
+        8
+    ) == {"a": {"b": {"c": 3, "d": [1, 2, 3, Sentinel, 8]}}}
+
+    assert set_by_dot_path(
+        {"a": {"b": {"c": 3, "d": [1, 2, 3]}}},
+        "a.b.d[]",
+        9
+    ) == {"a": {"b": {"c": 3, "d": [1, 2, 3, 9]}}}
 
     with pytest.raises(AssertionError):
         set_by_dot_path([1, 2, 3], "0", 4)
@@ -118,6 +149,16 @@ def test_merge_dicts_flat():
     assert merged_dict == {"a": 1, "b": 3, "c": 4, "d": 5}
 
 
+def test_merge_dicts_flat_with_lists():
+    dict1 = {"a": [1, 2, 3]}
+    dict2 = {"a": [4, 5, 6]}
+    dict3 = {"a": [7, 8, 9]}
+
+    merged_dict = merge_dicts_flat(dict1, dict2, dict3)
+
+    assert merged_dict == {"a": [7, 8, 9]}
+
+
 def test_merge_dicts():
     dict1 = {"a": {"b": {"c": "1"}}}
     dict2 = {"a": {"b": {"d": "2"}}}
@@ -134,6 +175,34 @@ def test_merge_dicts():
 
     assert merged_dict == expected_dict
 
+def test_merge_dicts_with_lists():
+    dict1 = {"a": {"b": [1, 2, 3]}}
+    dict2 = {"a": {"b": [4, 5, 6]}}
+    dict3 = {"a": {"b": [7, 8, 9]}}
+
+    merged_dict = merge_dicts(dict1, dict2, dict3)
+
+    expected_dict = {
+        "a": {
+            "b": [7, 8, 9]
+        }
+    }
+
+    assert merged_dict == expected_dict
+
+def test_merge_dicts_with_lists_and_sentinel():
+    dict1 = {"a": {"b": [1, 2, 3]}}
+    dict2 = {"a": {"b": [Sentinel, 5, Sentinel]}}
+
+    merged_dict = merge_dicts(dict1, dict2)
+
+    expected_dict = {
+        "a": {
+            "b": [1, 5, 3]
+        }
+    }
+
+    assert merged_dict == expected_dict
 
 def test_get_filename_suffix():
     file_path = "path/to/file.txt"

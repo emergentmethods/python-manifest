@@ -1,0 +1,124 @@
+.stages: &stages
+  stages:
+    - lint
+    - test
+    - setup
+    - bump
+    - sync
+    - build
+    - release
+    - deploy
+
+default:
+  cache: &global_cache
+    key: "$CI_COMMIT_BRANCH"
+    paths:
+      - .cache/pypoetry
+      - .cache/pip
+      - .venv/
+      - ./task
+    policy: pull-push
+
+.use_cache: &use_cache
+  cache:
+    <<: *global_cache
+    policy: pull
+
+.no_cache: &no_cache
+  cache: {}
+
+.global_before_script: &global_before_script
+  before_script:
+    - export GOPATH=${CI_PROJECT_DIR}/.cache
+    - export PATH=${GOPATH}/bin:${PATH}
+    - export PATH=$PATH:$(pwd)
+
+.activate_venv: &activate_venv
+  before_script:
+    - !reference [.global_before_script, before_script]
+    - source .venv/bin/activate
+
+before_script: !reference [.global_before_script, before_script]
+
+.is_tag_pipeline:
+  if: $CI_COMMIT_TAG != null && $CI_COMMIT_TAG != ""
+
+.is_not_tag_pipeline:
+  if: $CI_COMMIT_TAG == null || $CI_COMMIT_TAG == ""
+
+.is_main_branch:
+  if: $CI_COMMIT_BRANCH == "main" && $CI_COMMIT_TAG == null
+
+.is_not_main_branch:
+  if: $CI_COMMIT_BRANCH != "main"
+
+.is_side_branch:
+  if: $CI_COMMIT_BRANCH != "main" && $CI_COMMIT_BRANCH != "dev" && ($CI_COMMIT_TAG == null || $CI_COMMIT_TAG == "")
+
+.is_dev_branch:
+  if: $CI_COMMIT_BRANCH == "dev" && $CI_COMMIT_TAG == null
+
+.docker_job:
+  image: docker:latest
+  services:
+    - docker:dind
+
+.lint_code: &lint_code
+  extends:
+    - .use_cache
+    - .activate_venv
+  stage: lint
+  script:
+    - task lint
+
+.get_version: &get_version
+  cache: !reference [.use_cache, cache]
+  stage: setup
+  script:
+    - export PROJECT_VERSION=$(task version)
+    - echo $PROJECT_VERSION
+    - echo "PROJECT_VERSION=$PROJECT_VERSION" > $VERSION_ENV_FILE
+  artifacts:
+    reports:
+      dotenv:
+        - $VERSION_ENV_FILE
+
+.lint_commit: &lint_commit
+  stage: .pre
+  image: python:3.11
+  script:
+    - |
+      # Get the commit message of the last commit
+      commit_message=$(git log -1 --pretty=format:%s)
+
+      # If the commit message starts with "Merge branch", it is a merge commit, so skip the linting.
+      if [[ $commit_message == 'Merge branch'* ]]; then
+        echo "Merge commit detected, skipping lint."
+        exit 0
+      fi
+
+      pip install gitlint
+      # Ensure the commit message is valid
+      # We should always pass this as long as the pusher has the pre-commit hooks installed
+      # but just as a sanity check we'll run it here
+      git log -1 --pretty=%B | gitlint
+
+.build_wheel: &build_wheel
+  extends:
+    - .use_cache
+    - .activate_venv
+  stage: build
+  script:
+    - task build
+  artifacts:
+    name: dist
+    paths:
+      - dist/
+
+.publish_wheel: &publish_wheel
+  extends:
+    - .use_cache
+    - .activate_venv
+  stage: release
+  script:
+    - task publish PYPI_TOKEN=$PYPI_TOKEN

@@ -117,3 +117,5 @@ dmypy.json
 .pyre/
 
 *.code-workspace
+
+_test*.*

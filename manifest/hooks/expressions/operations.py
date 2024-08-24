@@ -1,10 +1,11 @@
+import base64
 import os
 from typing import Any, Callable
 
 from manifest.utils import is_async_callable, run_in_thread
 
 
-async def ref_op(args: list[str], data: dict) -> Any:
+async def ref_op(args: list[str], data: Any) -> Any:
     """
     Resolve a $ref expression in a dictionary and return the referenced value.
 
@@ -41,7 +42,7 @@ async def ref_op(args: list[str], data: dict) -> Any:
     :raises KeyError: If the referenced key is not found in the referenced file.
 
     """
-    from manifest.parse import load_from_file, current_file, parse_file_path
+    from manifest.parse import current_file, load_from_file, parse_file_path
 
     # Split the path into file_path and key_path
     path, *_ = args
@@ -58,12 +59,7 @@ async def ref_op(args: list[str], data: dict) -> Any:
         # current working directory
         if parsed_path["is_local"]:  # pragma: no cover
             if not os.path.isabs(file_path):
-                file_path = os.path.join(
-                    os.path.dirname(
-                        current_file.get()
-                    ),
-                    file_path
-                )
+                file_path = os.path.join(os.path.dirname(current_file.get()), file_path)
 
         ref_data = await load_from_file(file_path)
     elif len(parts) == 1:
@@ -86,10 +82,13 @@ async def ref_op(args: list[str], data: dict) -> Any:
 
 OPERATIONS: dict[str, Callable] = {
     "ref": ref_op,
+    "env": lambda args, _: os.environ.get(args[0], ""),
     "sum": lambda args, _: sum([float(v) for v in args]),
     "reverse": lambda args, _: "".join([str(arg)[::-1] for arg in args]),
     "upper": lambda args, _: args[0].upper(),
     "lower": lambda args, _: args[0].lower(),
+    "base64": lambda args, _: base64.b64encode(args[0].encode()).decode(),
+    "unbase64": lambda args, _: base64.b64decode(args[0]).decode(),
 }
 
 
@@ -127,7 +126,7 @@ def get_operation(operation_name: str) -> Callable[[list[str], dict], Any]:
     return OPERATIONS[operation_name]
 
 
-async def execute_operation(operation: str, args: list[str], data: dict) -> Any:
+async def execute_operation(operation: str, args: list[str], data: Any) -> Any:
     """
     Execute an operation with the given arguments and data.
 

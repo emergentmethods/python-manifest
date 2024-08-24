@@ -1,6 +1,7 @@
-from typing import Callable, Any
+from typing import Any, Callable
 
 from manifest.utils import is_async_callable, run_in_thread
+
 
 _HOOKS: dict[tuple[str, str], list[Callable]] = {
     ("pre", "load"): [],

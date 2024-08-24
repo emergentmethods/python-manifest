@@ -23,22 +23,22 @@ async def test_resolve_expression():
 
 
 async def test_resolve_expressions():
-    data = {
+    assert await resolve_expressions({
         "key1": "$reverse{hello}",
         "key2": "$sum{2,3}",
         "key3": {
             "key4": "$reverse{world}"
         },
-        "key5": ["$reverse{hello}", "$sum{2,3}"]
-    }
-
-    result = await resolve_expressions(data)
-
-    assert result == {
+        "key5": ["$reverse{hello}", "$sum{2,3}"],
+        "key6": "sub expression $sum{2,3}",
+    }) == {
         "key1": "olleh",
         "key2": 5.0,
         "key3": {
             "key4": "dlrow"
         },
-        "key5": ["olleh", 5.0]
+        "key5": ["olleh", 5.0],
+        "key6": "sub expression 5.0",
     }
+    assert await resolve_expressions(["$reverse{hello}", "$sum{2,3}"]) == ["olleh", 5.0]
+    assert await resolve_expressions("$reverse{$ref{key1}}", {"key1": "hello"}) == "olleh"
