@@ -41,7 +41,7 @@ async def ref_op(args: list[str], data: dict) -> Any:
     :raises KeyError: If the referenced key is not found in the referenced file.
 
     """
-    from manifest.parse import load_from_file, current_file, parse_file_path
+    from manifest.parse import current_file, load_from_file, parse_file_path
 
     # Split the path into file_path and key_path
     path, *_ = args
@@ -58,12 +58,7 @@ async def ref_op(args: list[str], data: dict) -> Any:
         # current working directory
         if parsed_path["is_local"]:  # pragma: no cover
             if not os.path.isabs(file_path):
-                file_path = os.path.join(
-                    os.path.dirname(
-                        current_file.get()
-                    ),
-                    file_path
-                )
+                file_path = os.path.join(os.path.dirname(current_file.get()), file_path)
 
         ref_data = await load_from_file(file_path)
     elif len(parts) == 1:
@@ -86,6 +81,7 @@ async def ref_op(args: list[str], data: dict) -> Any:
 
 OPERATIONS: dict[str, Callable] = {
     "ref": ref_op,
+    "env": lambda args, _: os.environ.get(args[0], ""),
     "sum": lambda args, _: sum([float(v) for v in args]),
     "reverse": lambda args, _: "".join([str(arg)[::-1] for arg in args]),
     "upper": lambda args, _: args[0].upper(),

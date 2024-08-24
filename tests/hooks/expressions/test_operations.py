@@ -1,4 +1,5 @@
 import pytest
+import os
 
 from manifest.hooks.expressions.operations import (
     execute_operation,
@@ -39,3 +40,15 @@ async def test_ref_operation():
 
     with pytest.raises(ValueError):
         await execute_operation("ref", ["invalid|path|4|5"], {})
+
+
+async def test_env_operation():
+    os.environ["TEST_ENV"] = "test"
+
+    result = await execute_operation("env", ["TEST_ENV"], {})
+    assert result == "test"
+
+    result = await execute_operation("env", ["INVALID_ENV"], {})
+    assert result == ""
+
+    del os.environ["TEST_ENV"]
