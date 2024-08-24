@@ -1,25 +1,28 @@
 import os
-from typing import Any, Callable
 from contextvars import ContextVar
 from pathlib import Path
-from fsspec import open as fsspec_open, AbstractFileSystem
+from typing import Any, Callable
+
+from fsspec import AbstractFileSystem
+from fsspec import open as fsspec_open
 from fsspec.core import url_to_fs
 
-from manifest.serializers import (
-    Serializer,
-    JSONSerializer,
-    YAMLSerializer,
-    TOMLSerializer,
-)
 from manifest.hooks import execute_hook, get_hooks
-from manifest.utils import (
-    merge_dicts_flat,
-    merge_dicts,
-    set_by_dot_path,
-    run_in_thread,
-    get_filename_suffix,
-    coerce_to_basic_types
+from manifest.serializers import (
+    JSONSerializer,
+    Serializer,
+    TOMLSerializer,
+    YAMLSerializer,
 )
+from manifest.utils import (
+    coerce_to_basic_types,
+    get_filename_suffix,
+    merge_dicts,
+    merge_dicts_flat,
+    run_in_thread,
+    set_by_dot_path,
+)
+
 
 Undefined = type("Undefined", (), {"__repr__": lambda self: "Undefined"})
 current_file: ContextVar[str] = ContextVar("current_file", default="")
@@ -40,7 +43,7 @@ def parse_file_path(file_path: str) -> dict[str, Any]:
     return {
         "protocol": fs.protocol,
         "path": fs._strip_protocol(file_path),
-        "is_local": getattr(fs, "local_file", False)
+        "is_local": getattr(fs, "local_file", False),
     }
 
 
@@ -110,9 +113,11 @@ async def read_from_file(file: str, **kwargs) -> bytes:
     :type file: Path
     :return: The contents of the file as a byte string.
     """
+
     def _():
         with fsspec_open(file, mode="rb", **kwargs) as f:
             return f.read()
+
     return await run_in_thread(_)
 
 
@@ -126,20 +131,22 @@ async def write_to_file(file: str, content: bytes, **kwargs) -> int:
     :type content: bytes
     :return: The number of bytes written to the file.
     """
+
     def _():
         with fsspec_open(file, "wb", **kwargs) as f:
             return f.write(content)
+
     return await run_in_thread(_)
 
 
 async def dump_to_file(
     file: str | Path,
     data: Any,
-    pre_process_hooks: list[Callable] = [],
-    post_process_hooks: list[Callable] = [],
+    pre_process_hooks: list[Callable] | None = None,
+    post_process_hooks: list[Callable] | None = None,
     default_serializer: Any = Undefined,
     root_alias: str = "root",
-    **kwargs
+    **kwargs,
 ) -> int:
     """
     Persist data to a file by serializing it, writing it to the file, and returning the number
@@ -159,16 +166,15 @@ async def dump_to_file(
     :rtype: int
     """
     string_path = str(file)
+    pre_process_hooks = pre_process_hooks or []
+    post_process_hooks = post_process_hooks or []
 
     if isinstance(data, dict) and root_alias in data:
         data = data[root_alias]
 
     # Get the serializer for the file type
     serializer = get_serializer_from_type(
-        _type=determine_file_type(
-            get_filename_suffix(string_path)
-        ),
-        _default=default_serializer
+        _type=determine_file_type(get_filename_suffix(string_path)), _default=default_serializer
     )
 
     pre_process_hooks = get_hooks("pre", operation="dump") + pre_process_hooks
@@ -199,11 +205,11 @@ async def dump_to_file(
 
 async def load_from_file(
     file: str | Path,
-    pre_process_hooks: list[Callable] = [],
-    post_process_hooks: list[Callable] = [],
+    pre_process_hooks: list[Callable] | None = None,
+    post_process_hooks: list[Callable] | None = None,
     default_serializer: Any = Undefined,
     root_alias: str = "root",
-    **kwargs
+    **kwargs,
 ) -> Any:
     """
     Parse a file by loading it, deserializing it, and returning the resulting dictionary.
@@ -218,13 +224,12 @@ async def load_from_file(
     :rtype: Any
     """
     string_path = str(file)
+    pre_process_hooks = pre_process_hooks or []
+    post_process_hooks = post_process_hooks or []
 
     # Get the serializer for the file type
     serializer = get_serializer_from_type(
-        _type=determine_file_type(
-            get_filename_suffix(string_path)
-        ),
-        _default=default_serializer
+        _type=determine_file_type(get_filename_suffix(string_path)), _default=default_serializer
     )
 
     pre_process_hooks = get_hooks("pre", operation="load") + pre_process_hooks
@@ -272,9 +277,9 @@ async def load_from_file(
 
 async def parse_files(
     files: list[str | Path],
-    pre_process_hooks: list[Callable] = [],
-    post_process_hooks: list[Callable] = [],
-    **kwargs
+    pre_process_hooks: list[Callable] | None = None,
+    post_process_hooks: list[Callable] | None = None,
+    **kwargs,
 ) -> dict:
     """
     Parse multiple files by calling `parse_file()` on each one and returning the merged
@@ -287,24 +292,18 @@ async def parse_files(
     """
     return merge_dicts_flat(
         *[
-            d for d in [
-                await load_from_file(
-                    file=file,
-                    pre_process_hooks=pre_process_hooks,
-                    post_process_hooks=post_process_hooks,
-                    **kwargs
-                )
-                for file in files
-            ]
+            await load_from_file(
+                file=file,
+                pre_process_hooks=pre_process_hooks,
+                post_process_hooks=post_process_hooks,
+                **kwargs,
+            )
+            for file in files
         ]
     )
 
 
-def parse_env_vars(
-    env_vars: dict[str, Any],
-    prefix: str,
-    delimiter: str = "__"
-) -> dict:
+def parse_env_vars(env_vars: dict[str, Any], prefix: str, delimiter: str = "__") -> dict:
     """
     Parse environment variables by converting them into a list of strings in the format "key=value",
     filtering out any keys that do not start with the specified prefix, and then calling
@@ -324,14 +323,14 @@ def parse_env_vars(
             "{k}={v}".format(
                 # Remove the beginning prefix and delimiter, and convert to lowercase
                 k=key.replace(prefix + delimiter, "").lower(),
-                v=val
+                v=val,
             ).replace(delimiter, ".")
             # Replace any delimiters with dots to be parsed by `parse_key_values()`
             for key, val in env_vars.items()
             # Only parse environment variables that start with the prefix
             if key.startswith(prefix)
         ],
-        coerce=True
+        coerce=True,
     )
 
 
@@ -346,7 +345,7 @@ def parse_key_value(key_value: str, coerce: bool = False) -> dict:
     :return: A dictionary containing the parsed key-value pair.
     :rtype: dict[str, Any]
     """
-    k, v = key_value.split("=")
+    k, v = key_value.split("=", 1)
     return set_by_dot_path({}, k, v if not coerce else coerce_to_basic_types(v))
 
 
@@ -370,9 +369,4 @@ def parse_key_values(key_values: list[str], coerce: bool = False) -> dict:
         >>> parse_key_values(kvs)
         {'a': {'b': {'c': '1', 'd': '2'}, 'e': '3'}}
     """
-    return merge_dicts(
-        *[
-            parse_key_value(key_value, coerce=coerce)
-            for key_value in key_values
-        ]
-    )
+    return merge_dicts(*[parse_key_value(key_value, coerce=coerce) for key_value in key_values])

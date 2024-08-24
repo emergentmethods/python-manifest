@@ -1,10 +1,32 @@
 import asyncio
 import os
-from typing import Any, Callable, Union
-from pathlib import Path
-from functools import partial
-from fsspec.core import url_to_fs
+import re
 from contextlib import contextmanager
+from functools import partial
+from pathlib import Path
+from typing import Any, Callable, Literal, Union
+
+from fsspec.core import url_to_fs
+
+
+class SentinelMeta(type):
+    def __init__(cls, name, bases, dict):
+        super(SentinelMeta, cls).__init__(name, bases, dict)
+        cls._instance = None
+
+    def __call__(cls, *args, **kwargs):
+        if not cls._instance:
+            cls._instance = super(SentinelMeta, cls).__call__(*args, **kwargs)
+        return cls._instance
+
+    def __repr__(cls) -> str:
+        return f"<{cls.__name__}>"
+
+    def __bool__(cls) -> Literal[False]:
+        return False
+
+
+class Sentinel(metaclass=SentinelMeta): ...
 
 
 def is_async_callable(f: Callable) -> bool:
@@ -30,74 +52,176 @@ async def run_in_thread(func: Callable, *args, **kwargs):
     :param **kwargs: The kwargs to pass to the callable
     :returns: The return value of the callable
     """
-    return await asyncio.get_running_loop().run_in_executor(
-        None, partial(func, *args, **kwargs)
-    )
+    return await asyncio.get_running_loop().run_in_executor(None, partial(func, *args, **kwargs))
+
+
+def parse_dot_path(dot_path: str) -> list:
+    """
+    Parse a dot path into a list of keys and indices.
+    Handles dot notation and bracket notation for lists.
+    """
+    path_parts = []
+    # Split by dots
+    parts = dot_path.split(".")
+    for part in parts:
+        # Find brackets in part
+        match = re.match(r"(.*?)\[(\d*)\]", part)
+        if match:
+            key, index = match.groups()
+            path_parts.append(key)
+            if index:
+                path_parts.append(int(index))
+            else:
+                path_parts.append(Sentinel)
+        else:
+            path_parts.append(part)
+    return path_parts
 
 
 def get_by_dot_path(data: dict, dot_path: str, default: Any = None) -> Any:
     """
     Get the value at the specified dot path.
-
-    :param data: The dictionary to get the value from.
-    :param dot_path: A string representing the dot path to the desired value.
-    :return: The value at the specified dot path.
     """
     assert isinstance(data, dict), "data must be a dictionary"
-    keys = dot_path.split('.')
+    keys = parse_dot_path(dot_path)
 
-    try:
-        for k in keys:
-            data = data[k]
-        return data
-    except (KeyError, TypeError):
-        return default
+    for key in keys:
+        if isinstance(data, dict):
+            data = data.get(key, default)
+        elif isinstance(data, list) and isinstance(key, int):
+            data = data[key] if key < len(data) else default
+        elif key is Sentinel:
+            return default
+        else:
+            return default
+    return data
 
 
 def set_by_dot_path(data: dict, dot_path: str, value: Any) -> dict:
     """
     Set the value at the specified dot path.
-
-    :param data: The dictionary to set the value in.
-    :param field_path: A string representing the dot path to the desired value.
-    :param value: The value to be set at the specified dot path.
     """
     assert isinstance(data, dict), "data must be a dictionary"
-    keys = dot_path.split('.')
+    keys = parse_dot_path(dot_path)
+
+    def set_value(ref: dict | list, key: str | int | Sentinel, value: Any) -> None:
+        if isinstance(ref, dict):
+            ref[key] = value
+        elif isinstance(ref, list):
+            if isinstance(key, int):
+                while len(ref) <= key:
+                    ref.append(Sentinel)
+                ref[key] = value
+            elif key is Sentinel:
+                ref.append(value)
 
     ref = data
-    # Iterate through the keys and set the value at the final key.
-    for k in keys[:-1]:
-        ref = ref.setdefault(k, {})
+    for key in keys[:-1]:
+        if isinstance(ref, dict):
+            ref = ref.setdefault(key, {})
+        elif isinstance(ref, list):
+            if isinstance(key, int):
+                while len(ref) <= key:
+                    ref.append(Sentinel)
+                ref[key] = value
+                return data
+            elif key is Sentinel:
+                ref.append(value)
+                return data
+        else:
+            raise ValueError(f"Unsupported type: {type(ref)}")
 
-    ref[keys[-1]] = value
+    set_value(ref, keys[-1], value)
     return data
 
 
 def unset_by_dot_path(data: dict, dot_path: str) -> dict:
     """
     Delete the key-value pair at the specified dot path.
-
-    :param data: The dictionary to delete the key-value pair from.
-    :param dot_path: A string representing the dot path to the desired key-value pair.
     """
     assert isinstance(data, dict), "data must be a dictionary"
-    keys = dot_path.split('.')
+    keys = parse_dot_path(dot_path)
 
     ref = data
-    # Iterate through the keys and get the dictionary at the penultimate key.
-    for k in keys[:-1]:
-        try:
-            ref = ref[k]
-        except KeyError:
-            # If a key in the path doesn't exist, there's nothing to unset
+    for key in keys[:-1]:
+        if isinstance(ref, dict):
+            ref = ref.get(key, {})
+        elif isinstance(ref, list) and isinstance(key, int):
+            ref = ref[key] if key < len(ref) else []
+        else:
             return data
 
-    # Delete the value at the final key.
-    if keys[-1] in ref:
+    if isinstance(ref, dict) and keys[-1] in ref:
         del ref[keys[-1]]
-
+    elif isinstance(ref, list) and isinstance(keys[-1], int):
+        if keys[-1] < len(ref):
+            del ref[keys[-1]]
     return data
+
+
+# def get_by_dot_path(data: dict, dot_path: str, default: Any = None) -> Any:
+#     """
+#     Get the value at the specified dot path.
+
+#     :param data: The dictionary to get the value from.
+#     :param dot_path: A string representing the dot path to the desired value.
+#     :return: The value at the specified dot path.
+#     """
+#     assert isinstance(data, dict), "data must be a dictionary"
+#     keys = dot_path.split('.')
+
+#     try:
+#         for k in keys:
+#             data = data[k]
+#         return data
+#     except (KeyError, TypeError):
+#         return default
+
+
+# def set_by_dot_path(data: dict, dot_path: str, value: Any) -> dict:
+#     """
+#     Set the value at the specified dot path.
+
+#     :param data: The dictionary to set the value in.
+#     :param field_path: A string representing the dot path to the desired value.
+#     :param value: The value to be set at the specified dot path.
+#     """
+#     assert isinstance(data, dict), "data must be a dictionary"
+#     keys = dot_path.split('.')
+
+#     ref = data
+#     # Iterate through the keys and set the value at the final key.
+#     for k in keys[:-1]:
+#         ref = ref.setdefault(k, {})
+
+#     ref[keys[-1]] = value
+#     return data
+
+
+# def unset_by_dot_path(data: dict, dot_path: str) -> dict:
+#     """
+#     Delete the key-value pair at the specified dot path.
+
+#     :param data: The dictionary to delete the key-value pair from.
+#     :param dot_path: A string representing the dot path to the desired key-value pair.
+#     """
+#     assert isinstance(data, dict), "data must be a dictionary"
+#     keys = dot_path.split('.')
+
+#     ref = data
+#     # Iterate through the keys and get the dictionary at the penultimate key.
+#     for k in keys[:-1]:
+#         try:
+#             ref = ref[k]
+#         except KeyError:
+#             # If a key in the path doesn't exist, there's nothing to unset
+#             return data
+
+#     # Delete the value at the final key.
+#     if keys[-1] in ref:
+#         del ref[keys[-1]]
+
+#     return data
 
 
 @contextmanager
@@ -136,9 +260,9 @@ def import_from_string(path: str) -> Any:
     from importlib import import_module, reload
 
     try:
-        module_path, class_name = path.strip(' ').rsplit('.', 1)
+        module_path, class_name = path.strip(" ").rsplit(".", 1)
     except ValueError:
-        raise ImportError(f"{path} isn\'t a valid module path.")
+        raise ImportError(f"{path} isn't a valid module path.") from None
 
     initial = import_module(module_path)
     module = reload(initial)
@@ -146,7 +270,7 @@ def import_from_string(path: str) -> Any:
     try:
         return getattr(module, class_name)
     except AttributeError:
-        raise ImportError(f"Module {path} does not have a `{class_name}` attribute")  # noqa:E501
+        raise ImportError(f"Module {path} does not have a `{class_name}` attribute") from None  # noqa:E501
 
 
 def merge_dicts_flat(*dicts) -> dict:
@@ -156,19 +280,41 @@ def merge_dicts_flat(*dicts) -> dict:
     This function takes any number of dictionaries and merges them into a single flat
     dictionary where keys with identical names are merged into a single value.
 
+    If a key contains a list, the latest list replaces the old one unless `Sentinel`
+    is used in which case only the `Sentinel` values are overridden.
+
     :param dicts: The dictionaries to merge.
     :type dicts: Any number of dicts
     :returns: A dictionary containing the merged key-value pairs.
     :rtype: dict
 
     :Example:
-        >>> dict1 = {'a': 1, 'b': 2}
-        >>> dict2 = {'b': 3, 'c': 4}
-        >>> dict3 = {'d': 5}
+        >>> dict1 = {'a': 1, 'b': [1, 2, 3]}
+        >>> dict2 = {'b': [Sentinel, 5, Sentinel]}
+        >>> dict3 = {'c': 3}
         >>> merge_dicts_flat(dict1, dict2, dict3)
-        {'a': 1, 'b': 3, 'c': 4, 'd': 5}
+        {'a': 1, 'b': [1, 5, 3], 'c': 3}
     """
-    return {k: v for d in dicts for k, v in d.copy().items()}
+    result: dict = {}
+
+    for d in dicts:
+        for key, value in d.items():
+            if key in result:
+                if isinstance(result[key], list) and isinstance(value, list):
+                    merged_list = result[key]
+                    for i in range(len(value)):
+                        if i < len(merged_list):
+                            if value[i] is not Sentinel:
+                                merged_list[i] = value[i]
+                        else:
+                            merged_list.append(value[i])
+                    result[key] = merged_list
+                else:
+                    result[key] = value
+            else:
+                result[key] = value
+
+    return result
 
 
 def merge_dicts(*dicts) -> dict:
@@ -178,25 +324,32 @@ def merge_dicts(*dicts) -> dict:
     This function takes any number of dictionaries and merges them into a single nested
     dictionary where keys with identical paths are merged into a single value.
 
+    If a key contains a list, the lists are concatenated with later values taking precedence,
+    and `Sentinel` placeholders in lists are overridden by subsequent values.
+
     :param dicts: The dictionaries to merge.
     :type dicts: Any number of dicts
     :returns: A nested dictionary containing the merged key-value pairs.
     :rtype: dict
-
-    :Example:
-        >>> dict1 = {'a': {'b': {'c': '1'}}}
-        >>> dict2 = {'a': {'b': {'d': '2'}}}
-        >>> dict3 = {'a': {'e': {'f': '3'}}}
-        >>> merge_dicts(dict1, dict2, dict3)
-        {'a': {'b': {'c': '1', 'd': '2'}, 'e': {'f': '3'}}}
     """
     result: dict = {}
+
     for d in dicts:
         for key, value in d.items():
             if key in result and isinstance(result[key], dict) and isinstance(value, dict):
                 result[key] = merge_dicts(result[key], value)
+            elif key in result and isinstance(result[key], list) and isinstance(value, list):
+                merged_list = result[key]
+                for i in range(len(value)):
+                    if i < len(merged_list):
+                        if value[i] is not Sentinel:
+                            merged_list[i] = value[i]
+                    else:
+                        merged_list.append(value[i])
+                result[key] = merged_list
             else:
                 result[key] = value
+
     return result
 
 
@@ -219,11 +372,13 @@ def get_filename_suffix(file_path: str):
 def coerce_sequence(value: list | tuple) -> list:
     return [coerce_to_basic_types(item) for item in value]
 
+
 def coerce_dict(value: dict) -> dict:
     return {k: coerce_to_basic_types(v) for k, v in value.items()}
 
+
 def coerce_object(value: object) -> dict:
-    if hasattr(value, '__dict__'):
+    if hasattr(value, "__dict__"):
         try:
             return coerce_dict(value.__dict__)
         except AttributeError:
@@ -233,9 +388,9 @@ def coerce_object(value: object) -> dict:
 
 def coerce_str(value: str) -> Union[int, float, str, bool, None]:
     normalized = value.strip().lower()
-    if normalized in ['true', 'false']:
-        return normalized == 'true'
-    elif normalized in ['none', 'null']:
+    if normalized in ["true", "false"]:
+        return normalized == "true"
+    elif normalized in ["none", "null"]:
         return None
     return coerce_num(value)
 
@@ -264,7 +419,7 @@ def coerce_to_basic_types(value: Any) -> Union[int, float, bool, str, list, dict
         return coerce_sequence(value)
     elif isinstance(value, dict):
         return coerce_dict(value)
-    elif hasattr(value, '__dict__'):
+    elif hasattr(value, "__dict__"):
         return coerce_object(value)
     elif isinstance(value, str):
         return coerce_str(value)
