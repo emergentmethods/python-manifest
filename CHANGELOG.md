@@ -1,4 +1,20 @@
 
+<a name="2.3.1"></a>
+## [2.3.1](https://gitlab.com/emergentmethods/python-manifest/compare/2.3.0...2.3.1)
+
+> 2024-12-10
+
+### Ci
+
+* Update taskfile commands
+* Fix uv install command
+* Update build env job
+
+### Fix
+
+* Bump dependencies and switch to uv for project management
+
+
 <a name="2.3.0"></a>
 ## [2.3.0](https://gitlab.com/emergentmethods/python-manifest/compare/2.2.3...2.3.0)
 
@@ -84,36 +100,10 @@
 ### Chore
 
 * Fix lint task in Taskfile.yml
-* Add Taskfile and update .gitlab-ci.yml
-* Bump pydantic to 2.3.0
-
-### Feat
-
-* Deprecate normalize in favor of model_dump to align better with pydantic v2
-
-### Refactor
-
-* Remove model config from base Manifest class
 
 
 <a name="2.0.0"></a>
-## [2.0.0](https://gitlab.com/emergentmethods/python-manifest/compare/1.4.1...2.0.0)
+## 2.0.0
 
 > 2023-07-13
-
-
-<a name="1.4.1"></a>
-## [1.4.1](https://gitlab.com/emergentmethods/python-manifest/compare/1.4.0...1.4.1)
-
-> 2023-06-17
-
-### Fix
-
-* Fix none type values in Manifests
-
-
-<a name="1.4.0"></a>
-## 1.4.0
-
-> 2023-06-12
 

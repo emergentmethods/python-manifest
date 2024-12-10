@@ -13,7 +13,7 @@ dependencies = [
     "toml>=0.10.2",
 ]
 name = "python-manifest"
-version = "2.3.0"
+version = "2.3.1"
 description = "A modern toolkit for working with application manifests and configurations."
 readme = "README.md"
 
