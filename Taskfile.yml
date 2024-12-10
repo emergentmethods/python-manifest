@@ -286,4 +286,4 @@ tasks:
 
   publish:
     cmds:
-      - V_PUBLISH_TOKEN="{{.PYPI_TOKEN}}" uv publish
+      - UV_PUBLISH_TOKEN="{{.PYPI_TOKEN}}" uv publish
