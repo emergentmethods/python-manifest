@@ -31,6 +31,7 @@ workflow:
 variables:
   VERSION_ENV_FILE: .version
   PIP_CACHE_DIR: "$CI_PROJECT_DIR/.cache/pip"
+  UV_CACHE_DIR: "$CI_PROJECT_DIR/.cache/uv"
 
 build-env:
   stage: .pre
@@ -38,8 +39,8 @@ build-env:
     - python -m venv .venv/
     - source .venv/bin/activate
     - pip install -U pip
-    - pip install poetry
-    - poetry install
+    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - uv sync --refresh
     # Install go-task
     - sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b .
   rules:
