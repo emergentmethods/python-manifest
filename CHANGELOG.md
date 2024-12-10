@@ -1,4 +1,14 @@
 
+<a name="2.3.2"></a>
+## [2.3.2](https://gitlab.com/emergentmethods/python-manifest/compare/2.3.1...2.3.2)
+
+> 2024-12-10
+
+### Fix
+
+* Fix publish command in taskfile
+
+
 <a name="2.3.1"></a>
 ## [2.3.1](https://gitlab.com/emergentmethods/python-manifest/compare/2.3.0...2.3.1)
 
@@ -87,23 +97,9 @@
 
 * Relax Pydantic dependency to allow v1 and v2
 
-### Feat
-
-* Add compatibilty for Pydantic v1
-
 
 <a name="2.1.0"></a>
-## [2.1.0](https://gitlab.com/emergentmethods/python-manifest/compare/2.0.0...2.1.0)
+## 2.1.0
 
 > 2023-09-22
-
-### Chore
-
-* Fix lint task in Taskfile.yml
-
-
-<a name="2.0.0"></a>
-## 2.0.0
-
-> 2023-07-13
 
