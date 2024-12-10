@@ -39,7 +39,7 @@ build-env:
     - python -m venv .venv/
     - source .venv/bin/activate
     - pip install -U pip
-    - curl -LsSf https://astral.sh/uv/install.sh | sh
+    - pip install uv
     - uv sync --refresh
     # Install go-task
     - sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b .
