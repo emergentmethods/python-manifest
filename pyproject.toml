@@ -1,41 +1,46 @@
-[tool.poetry]
+[project]
+authors = [
+    {name = "Timothy Pogue", email = "tim@emergentmethods.ai"},
+]
+license = {text = "MIT"}
+requires-python = "<4.0,>=3.10"
+dependencies = [
+    "pyyaml>=6.0",
+    "python-rapidjson>=1.10",
+    "pydantic>=1.8,<3.0",
+    "python-dotenv>=1.0.0",
+    "fsspec>=2024.10.0",
+    "toml>=0.10.2",
+]
 name = "python-manifest"
 version = "2.3.0"
 description = "A modern toolkit for working with application manifests and configurations."
-authors = ["Timothy Pogue <tim@emergentmethods.ai>"]
 readme = "README.md"
-packages = [
-    { include = "manifest" },
-]
-license = "MIT"
+
+[project.urls]
 repository = "https://github.com/emergentmethods/python-manifest"
 
-
-[tool.poetry.dependencies]
-python = "^3.10"
-pyyaml = "^6.0"
-python-rapidjson = "^1.10"
-pydantic = ">=1.8,<3.0"
-python-dotenv = "^1.0.0"
-fsspec = "^2023.5.0"
-toml = "^0.10.2"
-
-[tool.poetry.group.dev.dependencies]
-mypy = "^1.2.0"
-types-pyyaml = "^6.0.12.9"
-pytest = "^7.3.1"
-pytest-asyncio = "^0.21.0"
-mkdocs = "^1.4.3"
-mkdocs-material = "^9.1.15"
-mkdocstrings = {version = "^0.22.0", extras = ["python"]}
-coverage = "^7.2.7"
-types-toml = "^0.10.8.6"
-pre-commit = "^3.3.2"
-ruff = "^0.6.2"
+[dependency-groups]
+dev = [
+    "mypy>=1.2.0",
+    "types-pyyaml>=6.0.12.9",
+    "pytest>=8.3.4",
+    "pytest-asyncio>=0.24.0",
+    "mkdocs>=1.4.3",
+    "mkdocs-material>=9.1.15",
+    "mkdocstrings[python]>=0.22.0",
+    "coverage>=7.2.7",
+    "types-toml>=0.10.8.6",
+    "pre-commit>=4.0.1",
+    "ruff>=0.6.2",
+]
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["manifest"]
 
 [tool.ruff]
 line-length = 100

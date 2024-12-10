@@ -82,25 +82,6 @@ async def resolve_expression(expression: str, context: Any) -> Any:
 
     return expression
 
-    # matches = re.finditer(EXPRESSION_LOC_REGEX, expression)
-    # result = expression
-    # offset = 0
-
-    # for match in matches:
-    #     start, end = match.span()
-    #     resolved_value = await _resolve(match.group(0))
-
-    #     if expression == match.group(0):
-    #         # If the entire expression is the match, return the resolved value directly
-    #         return resolved_value
-    #     else:
-    #         # Otherwise, concatenate the resolved value as a string
-    #         resolved_value = str(resolved_value)
-    #         result = result[:start + offset] + resolved_value + result[end + offset:]
-    #         offset += len(resolved_value) - (end - start)
-
-    # return result
-
 
 async def resolve_expressions(data: dict | list | Any, parent: Any | None = None):
     """
