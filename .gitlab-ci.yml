@@ -41,13 +41,14 @@ build-env:
     - pip install -U pip
     - pip install uv
     - uv sync --refresh
+    - uv cache prune --ci
     # Install go-task
     - sh -c "$(curl --location https://taskfile.dev/install.sh)" -- -d -b .
   rules:
       # If project dependencies were changed then run
     - changes:
       - pyproject.toml
-      - promatchups/
+      - manifest
       when: always
       # If .venv exists then skip
     - exists:       
