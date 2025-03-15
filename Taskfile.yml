@@ -156,7 +156,7 @@ tasks:
       - task: download-binary
         vars:
           REPO: caarlos0/svu
-          TAG: latest
+          TAG: v2.2.0
           BINARY: svu
 
   version:
