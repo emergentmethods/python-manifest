@@ -69,6 +69,10 @@ async def ref_op(args: list[str], data: Any) -> Any:
     else:
         raise ValueError(f"Invalid $ref format: {path}")
 
+    # If the key_path is "*", return the entire dictionary
+    if key_path == "*":
+        return ref_data
+
     # Split the key_path into individual keys
     keys = key_path.split(".")
 
