@@ -1,4 +1,18 @@
 
+<a name="2.3.3"></a>
+## [2.3.3](https://gitlab.com/emergentmethods/python-manifest/compare/2.3.2...2.3.3)
+
+> 2025-03-15
+
+### Chore
+
+* Pin svu
+
+### Fix
+
+* Support getting full document in ref op
+
+
 <a name="2.3.2"></a>
 ## [2.3.2](https://gitlab.com/emergentmethods/python-manifest/compare/2.3.1...2.3.2)
 
@@ -75,7 +89,7 @@
 
 
 <a name="2.2.1"></a>
-## [2.2.1](https://gitlab.com/emergentmethods/python-manifest/compare/2.2.0...2.2.1)
+## 2.2.1
 
 > 2023-12-03
 
@@ -86,20 +100,4 @@
 ### Fix
 
 * Ensure keys are not sorted in yaml serializer
-
-
-<a name="2.2.0"></a>
-## [2.2.0](https://gitlab.com/emergentmethods/python-manifest/compare/2.1.0...2.2.0)
-
-> 2023-09-30
-
-### Chore
-
-* Relax Pydantic dependency to allow v1 and v2
-
-
-<a name="2.1.0"></a>
-## 2.1.0
-
-> 2023-09-22
 
